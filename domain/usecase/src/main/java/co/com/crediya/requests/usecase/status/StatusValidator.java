@@ -21,13 +21,13 @@ public class StatusValidator {
      */
     public static Mono<Status> validate(Status status) {
         if (status.getNames() == null || status.getNames().isEmpty()){
-            return Mono.error(new Exception(ErrorMessages.requiredField("status name")));
+            return Mono.error(new IllegalArgumentException(ErrorMessages.requiredField("status name")));
         }
 
         try {
             EnumUtils.fromString(StatusEnum.class, status.getNames());
             return Mono.just(status);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return Mono.error(e);
         }
     }
@@ -45,7 +45,7 @@ public class StatusValidator {
      */
     public static Mono<String> validateName(String name) {
         if (name == null || name.isEmpty()){
-            return Mono.error(new Exception(ErrorMessages.requiredField("status name")));
+            return Mono.error(new IllegalArgumentException(ErrorMessages.requiredField("status name")));
         }
         return Mono.just(name);
     }
