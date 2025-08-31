@@ -1,9 +1,10 @@
 package co.com.crediya.requests.model.status;
 
+import co.com.crediya.requests.model.shared.enums.FromStringEnum;
 import lombok.Getter;
 
 @Getter
-public enum StatusEnum {
+public enum StatusEnum implements FromStringEnum<String> {
     PENDING_REVIEW("PENDING_REVIEW"),
     APPROVED("APPROVED"),
     REJECTED("REJECTED");
