@@ -12,7 +12,7 @@ buildCache {
     }
 }
 
-rootProject.name = 'crediya-requests--lombok&#61;true'
+rootProject.name = 'crediya-requests'
 
 include ':app-service'
 include ':model'
