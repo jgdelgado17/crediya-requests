@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter
 public enum StatusEnum implements FromStringEnum<String> {
     PENDING_REVIEW("PENDING_REVIEW"),
+    MANUAL_REVIEW("MANUAL_REVIEW"),
     APPROVED("APPROVED"),
     REJECTED("REJECTED");
 
