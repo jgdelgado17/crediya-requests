@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 
 public record TypeLoanRequest(
         @NotBlank(message = "Name is required")
-        String Name,
+        String name,
         @NotNull(message = "Min amount is required")
         BigDecimal minAmount,
         @NotNull(message = "Max amount is required")
