@@ -1,5 +1,6 @@
 package co.com.crediya.requests.usecase.status;
 
+import co.com.crediya.requests.model.shared.exceptions.ErrorMessages;
 import co.com.crediya.requests.model.status.Status;
 import co.com.crediya.requests.model.status.gateways.StatusRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,17 +11,24 @@ public class StatusUseCase {
     private final StatusRepository statusRepository;
 
     /**
-     * Save a new status.
+     * Saves a status.
      *
-     * @param status the status to be saved. The {@link Status#names} field
-     *               cannot be empty.
-     * @return a {@link Mono} that emits a validated {@link Status} or an
-     * error if the {@link Status#names} field is empty.
-     * @see StatusValidator#validate(Status)
+     * <p>This method validates the status and if it is valid, it saves the status in the database.
+     * If the status name already exists, a {@link Mono} that emits an error is returned.
+     *
+     * @param status the status to be saved. The status cannot be null.
+     * @return a {@link Mono} that emits the saved status or an error if the status name is already taken.
      */
     public Mono<Status> save(Status status) {
         return StatusValidator.validate(status)
-                .flatMap(statusRepository::save);
+                .flatMap(validStatus ->
+                        statusRepository.findByName(validStatus.getNames())
+                        .flatMap(existingStatus ->
+                                Mono.error(new IllegalArgumentException(ErrorMessages.objectAlreadyExists(validStatus.getNames()))).cast(Status.class)
+                        )
+                                .switchIfEmpty(Mono.defer(() -> statusRepository.save(validStatus)))
+                );
+
     }
 
     /**

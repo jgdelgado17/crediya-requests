@@ -1,5 +1,6 @@
 package co.com.crediya.requests.usecase.typeloan;
 
+import co.com.crediya.requests.model.shared.exceptions.ErrorMessages;
 import co.com.crediya.requests.model.typeloan.TypeLoan;
 import co.com.crediya.requests.model.typeloan.gateways.TypeLoanRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,17 +13,21 @@ public class TypeLoanUseCase {
     /**
      * Creates a new type loan.
      *
-     * <p>This method validates the type loan and if the validation is successful, it saves the
-     * type loan.
+     * <p>This method validates the type loan to be created and if it is valid, it creates the type loan.
+     * If the type loan already exists, an error is returned.
      *
-     * @param typeLoan the type loan to be saved. The type loan cannot be null.
-     * @return a {@link Mono} that emits a validated type loan or an error if the type loan is
-     * invalid.
-     * @see TypeLoanValidator#validate(TypeLoan)
+     * @param typeLoan the type loan to be created.
+     * @return a Mono that emits a saved type loan or an error if the type loan already exists.
      */
     public Mono<TypeLoan> createTypeLoan(TypeLoan typeLoan){
         return TypeLoanValidator.validate(typeLoan)
-                .flatMap(typeLoanRepository::save);
+                .flatMap(validTypeLoan ->
+                        typeLoanRepository.findByName(typeLoan.getName())
+                        .flatMap(existingTypeLoan ->
+                                Mono.error(new IllegalArgumentException(ErrorMessages.objectAlreadyExists(typeLoan.getName()))).cast(TypeLoan.class)
+                        )
+                                .switchIfEmpty(Mono.defer(() -> typeLoanRepository.save(typeLoan)))
+                );
     }
 
     /**
