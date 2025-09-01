@@ -12,3 +12,11 @@ spring:
       path: /h2
   profiles:
     include:
+adapters:
+  r2dbc:
+    host: "localhost"
+    port: 5432
+    username: "postgres"
+    password: "postgres"
+    database: "crediya_requests"
+    schema: "public"
