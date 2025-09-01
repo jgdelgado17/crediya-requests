@@ -13,21 +13,25 @@ public class TypeLoanUseCase {
     /**
      * Creates a new type loan.
      *
-     * <p>This method validates the type loan to be created and if it is valid, it creates the type loan.
+     * <p>This method validates the type loan to be created, and if it is valid, it creates the type loan.
      * If the type loan already exists, an error is returned.
      *
      * @param typeLoan the type loan to be created.
      * @return a Mono that emits a saved type loan or an error if the type loan already exists.
      */
-    public Mono<TypeLoan> createTypeLoan(TypeLoan typeLoan){
+    public Mono<TypeLoan> createTypeLoan(TypeLoan typeLoan) {
         return TypeLoanValidator.validate(typeLoan)
-                .flatMap(validTypeLoan ->
-                        typeLoanRepository.findByName(typeLoan.getName())
-                        .flatMap(existingTypeLoan ->
-                                Mono.error(new IllegalArgumentException(ErrorMessages.objectAlreadyExists(typeLoan.getName()))).cast(TypeLoan.class)
-                        )
-                                .switchIfEmpty(Mono.defer(() -> typeLoanRepository.save(typeLoan)))
-                );
+                .flatMap(validTypeLoan -> typeLoanRepository.findByName(validTypeLoan.getName()))
+                .flatMap(existingTypeLoan ->
+                        Mono.error(new IllegalArgumentException(ErrorMessages.objectAlreadyExists(typeLoan.getName())))
+                )
+                .cast(TypeLoan.class)
+                .switchIfEmpty(Mono.defer(() -> {
+                    if (typeLoan.getAutomaticValidation() == null) {
+                        typeLoan.setAutomaticValidation(false);
+                    }
+                    return typeLoanRepository.save(typeLoan);
+                }));
     }
 
     /**
