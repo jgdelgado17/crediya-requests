@@ -1,7 +1,7 @@
-package co.com.crediya.requests.usecase.requests;
+package co.com.crediya.requests.usecase.loanApplication;
 
-import co.com.crediya.requests.model.requests.Requests;
-import co.com.crediya.requests.model.requests.gateways.RequestsRepository;
+import co.com.crediya.requests.model.loanApplication.LoanApplication;
+import co.com.crediya.requests.model.loanApplication.gateways.LoanApplicationRepository;
 import co.com.crediya.requests.model.shared.exceptions.ErrorMessages;
 import co.com.crediya.requests.model.status.Status;
 import co.com.crediya.requests.model.status.StatusEnum;
@@ -14,8 +14,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RequiredArgsConstructor
-public class RequestsUseCase {
-    private final RequestsRepository requestsRepository;
+public class LoanApplicationUseCase {
+    private final LoanApplicationRepository loanApplicationRepository;
     private final TypeLoanRepository typeLoanRepository;
     private final StatusRepository statusRepository;
 
@@ -27,7 +27,7 @@ public class RequestsUseCase {
      * @param request The request to be created.
      * @return A Mono that emits a saved request or an error if the type loan or status is not found.
      */
-    public Mono<Requests> createRequest(Requests request){
+    public Mono<LoanApplication> createRequest(LoanApplication request){
         return typeLoanRepository.findByName(request.getTypeLoan().getName())
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Type loan not found in database")))
                 .zipWith(
@@ -39,7 +39,7 @@ public class RequestsUseCase {
                     var status = tuple.getT2();
                     request.setTypeLoan(typeLoan);
                     request.setStatus(status);
-                    return requestsRepository.save(request);
+                    return loanApplicationRepository.save(request);
                 });
     }
 
@@ -54,9 +54,9 @@ public class RequestsUseCase {
      * invalid.
      * @see StatusValidator#validateName(String)
      */
-    public Flux<Requests> findRequestByStatus(String status){
+    public Flux<LoanApplication> findRequestByStatus(String status){
         return StatusValidator.validateName(status)
-                .flatMapMany(requestsRepository::findByStatus);
+                .flatMapMany(loanApplicationRepository::findByStatus);
     }
 
     /**
@@ -68,11 +68,11 @@ public class RequestsUseCase {
      * @param email the email to be found. The email cannot be null or empty.
      * @return a Flux that emits all requests with the given email or an error if the email is
      * invalid.
-     * @see RequestsValidator#validateEmail(String)
+     * @see LoanApplicationValidator#validateEmail(String)
      */
-    public Flux<Requests> findRequestByEmail(String email){
-        return RequestsValidator.validateEmail(email)
-                .flatMapMany(requestsRepository::findByEmail);
+    public Flux<LoanApplication> findRequestByEmail(String email){
+        return LoanApplicationValidator.validateEmail(email)
+                .flatMapMany(loanApplicationRepository::findByEmail);
     }
 
     /**
@@ -86,9 +86,9 @@ public class RequestsUseCase {
      * invalid.
      * @see TypeLoanValidator#validateName(String)
      */
-    public Flux<Requests> findRequestByTypeLoan(String typeLoan){
+    public Flux<LoanApplication> findRequestByTypeLoan(String typeLoan){
         return TypeLoanValidator.validateName(typeLoan)
-                .flatMapMany(requestsRepository::findByTypeLoan);
+                .flatMapMany(loanApplicationRepository::findByTypeLoan);
     }
 
     /**
@@ -103,9 +103,9 @@ public class RequestsUseCase {
      * @param statusName the name of the status to be updated.
      * @return a Mono that emits the updated request or an error if the request or status is not found.
      */
-    public Mono<Requests> updateStatusRequest(Integer id, String statusName) {
-        return requestsRepository.findById(id)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException(ErrorMessages.notFoundMessage(Requests.class, id))))
+    public Mono<LoanApplication> updateStatusRequest(Integer id, String statusName) {
+        return loanApplicationRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException(ErrorMessages.notFoundMessage(LoanApplication.class, id))))
                 .zipWith(StatusValidator.validateName(statusName)
                         .flatMap(status -> statusRepository.findByName(statusName)
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException(ErrorMessages.notFoundMessage(Status.class, statusName))))
@@ -114,7 +114,7 @@ public class RequestsUseCase {
                     var request = tuple.getT1();
                     var status = tuple.getT2();
                     request.setStatus(status);
-                    return requestsRepository.save(request);
+                    return loanApplicationRepository.save(request);
                 });
     }
 }

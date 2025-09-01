@@ -1,4 +1,4 @@
-package co.com.crediya.requests.r2dbc.modules.requests.data;
+package co.com.crediya.requests.r2dbc.modules.loanApplication.data;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "requests")
-public class RequestsEntity {
+public class LoanApplicationEntity {
     @Id
     private Integer id;
     private BigDecimal amount;

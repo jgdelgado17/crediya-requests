@@ -1,12 +1,12 @@
-package co.com.crediya.requests.r2dbc.modules.requests.adapter;
+package co.com.crediya.requests.r2dbc.modules.loanApplication.adapter;
 
-import co.com.crediya.requests.model.requests.Requests;
-import co.com.crediya.requests.model.requests.gateways.RequestsRepository;
+import co.com.crediya.requests.model.loanApplication.LoanApplication;
+import co.com.crediya.requests.model.loanApplication.gateways.LoanApplicationRepository;
 import co.com.crediya.requests.model.shared.exceptions.ErrorMessages;
 import co.com.crediya.requests.model.status.Status;
-import co.com.crediya.requests.r2dbc.modules.requests.data.RequestsEntity;
-import co.com.crediya.requests.r2dbc.modules.requests.mapper.RequestsMapper;
-import co.com.crediya.requests.r2dbc.modules.requests.repository.RequestsRepositoryCrud;
+import co.com.crediya.requests.r2dbc.modules.loanApplication.data.LoanApplicationEntity;
+import co.com.crediya.requests.r2dbc.modules.loanApplication.mapper.LoanApplicationMapper;
+import co.com.crediya.requests.r2dbc.modules.loanApplication.repository.LoanApplicationRepositoryCrud;
 import co.com.crediya.requests.r2dbc.modules.status.mapper.StatusMapper;
 import co.com.crediya.requests.r2dbc.modules.status.repository.StatusRepositoryCrud;
 import co.com.crediya.requests.r2dbc.modules.typeloan.mapper.TypeLoanMapper;
@@ -20,13 +20,13 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class RequestsAdapter implements RequestsRepository {
+public class LoanApplicationAdapter implements LoanApplicationRepository {
 
-    private static final Logger log = LoggerFactory.getLogger(RequestsAdapter.class);
-    private final RequestsRepositoryCrud requestsRepositoryCrud;
+    private static final Logger log = LoggerFactory.getLogger(LoanApplicationAdapter.class);
+    private final LoanApplicationRepositoryCrud loanApplicationRepositoryCrud;
     private final StatusRepositoryCrud statusRepositoryCrud;
     private final TypeLoanRepositoryCrud typeLoanRepositoryCrud;
-    private final RequestsMapper requestsMapper;
+    private final LoanApplicationMapper loanApplicationMapper;
     private final StatusMapper statusMapper;
     private final TypeLoanMapper typeLoanMapper;
 
@@ -35,14 +35,14 @@ public class RequestsAdapter implements RequestsRepository {
      *
      * <p>This method logs the request saving process in the info level.
      *
-     * @param requests the request to be saved. The request cannot be null.
+     * @param loanApplication the request to be saved. The request cannot be null.
      * @return a {@link Mono} that emits the saved request or an error if it cannot be saved.
      */
     @Override
-    public Mono<Requests> save(Requests requests) {
-        log.info("Saving request by email: {}", requests.getEmail());
+    public Mono<LoanApplication> save(LoanApplication loanApplication) {
+        log.info("Saving request by email: {}", loanApplication.getEmail());
 
-        return requestsRepositoryCrud.save(requestsMapper.toRequestsEntity(requests))
+        return loanApplicationRepositoryCrud.save(loanApplicationMapper.toRequestsEntity(loanApplication))
                 .flatMap(this::buildRequestsModel)
                 .doOnSuccess(r -> log.info("Request saved successfully: {}", r.getId()))
                 .doOnError(error -> log.error("Error saving request: {}", error.getMessage()));
@@ -57,9 +57,9 @@ public class RequestsAdapter implements RequestsRepository {
      * @return a {@link Mono} that emits the found request or an error if it cannot be found.
      */
     @Override
-    public Mono<Requests> findById(Integer id) {
+    public Mono<LoanApplication> findById(Integer id) {
         log.info("Finding request by id: {}", id);
-        return requestsRepositoryCrud.findById(id)
+        return loanApplicationRepositoryCrud.findById(id)
                 .flatMap(this::buildRequestsModel)
                 .doOnSuccess(r -> log.info("Request found successfully: {}", r.getId()))
                 .doOnError(error -> log.error("Error finding request: {}", error.getMessage()));
@@ -74,12 +74,12 @@ public class RequestsAdapter implements RequestsRepository {
      * @return a {@link Flux} that emits all requests with the given status or an error if they cannot be found.
      */
     @Override
-    public Flux<Requests> findByStatus(String status) {
+    public Flux<LoanApplication> findByStatus(String status) {
         log.info("Finding requests by status: {}", status);
-        return requestsRepositoryCrud.findByStatus(status)
+        return loanApplicationRepositoryCrud.findByStatus(status)
                 .flatMap(this::buildRequestsModel)
                 .doOnNext(r -> log.info("Request found successfully whit id: {} and status: {}", r.getId(), r.getStatus()))
-                .doOnComplete(() -> log.info("Requests found successfully"))
+                .doOnComplete(() -> log.info("LoanApplication found successfully"))
                 .doOnError(error -> log.error("Error finding requests: {}", error.getMessage()));
     }
 
@@ -92,12 +92,12 @@ public class RequestsAdapter implements RequestsRepository {
      * @return a {@link Flux} that emits all requests with the given type loan or an error if they cannot be found.
      */
     @Override
-    public Flux<Requests> findByTypeLoan(String typeLoan) {
+    public Flux<LoanApplication> findByTypeLoan(String typeLoan) {
         log.info("Finding requests by type loan: {}", typeLoan);
-        return requestsRepositoryCrud.findByTypeLoan(typeLoan)
+        return loanApplicationRepositoryCrud.findByTypeLoan(typeLoan)
                 .flatMap(this::buildRequestsModel)
                 .doOnNext(r -> log.info("Request found successfully whit id: {} and type loan: {}", r.getId(), r.getTypeLoan()))
-                .doOnComplete(() -> log.info("Requests found successfully"))
+                .doOnComplete(() -> log.info("LoanApplication found successfully"))
                 .doOnError(error -> log.error("Error finding requests: {}", error.getMessage()));
     }
 
@@ -110,34 +110,34 @@ public class RequestsAdapter implements RequestsRepository {
      * @return a {@link Flux} that emits all requests with the given email or an error if they cannot be found.
      */
     @Override
-    public Flux<Requests> findByEmail(String email) {
+    public Flux<LoanApplication> findByEmail(String email) {
         log.info("Finding requests by email: {}", email);
-        return requestsRepositoryCrud.findByEmail(email)
+        return loanApplicationRepositoryCrud.findByEmail(email)
                 .flatMap(this::buildRequestsModel)
                 .doOnNext(r -> log.info("Request found successfully whit id: {} and email: {}", r.getId(), r.getEmail()))
-                .doOnComplete(() -> log.info("Requests found successfully"))
+                .doOnComplete(() -> log.info("LoanApplication found successfully"))
                 .doOnError(error -> log.error("Error finding requests: {}", error.getMessage()));
     }
 
     /**
-     * Builds a {@link Requests} model from a {@link RequestsEntity} and their associated entities.
+     * Builds a {@link LoanApplication} model from a {@link LoanApplicationEntity} and their associated entities.
      *
      * <p>This method fetches the status and type loan associated to the request and maps them to the
-     * {@link Requests} model.
+     * {@link LoanApplication} model.
      *
-     * @param requestsEntity the request entity to be built into a model
-     * @return a {@link Mono} that emits the built {@link Requests} model
+     * @param loanApplicationEntity the request entity to be built into a model
+     * @return a {@link Mono} that emits the built {@link LoanApplication} model
      */
-    private Mono<Requests> buildRequestsModel(RequestsEntity requestsEntity) {
-        return statusRepositoryCrud.findById(requestsEntity.getStatus())
-                .switchIfEmpty(Mono.error(new IllegalArgumentException(ErrorMessages.notFoundMessage(Status.class, requestsEntity.getStatus()))))
-                .zipWith(typeLoanRepositoryCrud.findById(requestsEntity.getTypeLoan()))
+    private Mono<LoanApplication> buildRequestsModel(LoanApplicationEntity loanApplicationEntity) {
+        return statusRepositoryCrud.findById(loanApplicationEntity.getStatus())
+                .switchIfEmpty(Mono.error(new IllegalArgumentException(ErrorMessages.notFoundMessage(Status.class, loanApplicationEntity.getStatus()))))
+                .zipWith(typeLoanRepositoryCrud.findById(loanApplicationEntity.getTypeLoan()))
                 .map(tuple -> {
                     var status = statusMapper.toModel(tuple.getT1());
                     var typeLoan = typeLoanMapper.toTypeLoan(tuple.getT2());
-                    return requestsMapper.toRequests(requestsEntity, status, typeLoan);
+                    return loanApplicationMapper.toRequests(loanApplicationEntity, status, typeLoan);
                 })
-                .doOnSuccess(requests -> log.info("Request model built successfully: {}", requests.getId()))
+                .doOnSuccess(loanApplication -> log.info("Request model built successfully: {}", loanApplication.getId()))
                 .doOnError(error -> log.error("Error building request model: {}", error.getMessage()));
     }
 }

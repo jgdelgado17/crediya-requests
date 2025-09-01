@@ -1,4 +1,4 @@
-package co.com.crediya.requests.model.requests;
+package co.com.crediya.requests.model.loanApplication;
 import co.com.crediya.requests.model.status.Status;
 import co.com.crediya.requests.model.typeloan.TypeLoan;
 import lombok.Builder;
@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-public class Requests {
+public class LoanApplication {
     private Integer id;
     private BigDecimal amount;
     private int term;

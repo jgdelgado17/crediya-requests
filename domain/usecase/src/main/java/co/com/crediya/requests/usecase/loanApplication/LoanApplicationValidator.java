@@ -1,9 +1,9 @@
-package co.com.crediya.requests.usecase.requests;
+package co.com.crediya.requests.usecase.loanApplication;
 
 import co.com.crediya.requests.model.shared.exceptions.ErrorMessages;
 import reactor.core.publisher.Mono;
 
-public class RequestsValidator {
+public class LoanApplicationValidator {
 
     /**
      * Validates an email.
