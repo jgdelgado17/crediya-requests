@@ -22,14 +22,19 @@ public class LoanApplicationUseCase {
     /**
      * Creates a new request with the given parameters.
      *
-     * <p>This method validates the type loan and status, and if they exist, it creates a new request.
+     * <p>This method validates the amount of the request and the type loan and status, and if they exist, it creates a new request.
      *
      * @param request The request to be created.
      * @return A Mono that emits a saved request or an error if the type loan or status is not found.
      */
-    public Mono<LoanApplication> createRequest(LoanApplication request){
+    public Mono<LoanApplication> createRequest(LoanApplication request) {
         return typeLoanRepository.findByName(request.getTypeLoan().getName())
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Type loan not found in database")))
+                .flatMap(typeLoan -> LoanApplicationValidator.validateAmountInRange(
+                        request.getAmount(),
+                        typeLoan.getMinAmount(),
+                        typeLoan.getMaxAmount()
+                ).thenReturn(typeLoan))
                 .zipWith(
                         statusRepository.findByName(StatusEnum.PENDING_REVIEW.getValue())
                                 .switchIfEmpty(Mono.error(new Exception("Status not found in database")))
