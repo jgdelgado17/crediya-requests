@@ -6,6 +6,7 @@ import reactor.core.publisher.Mono;
 
 public interface RequestsRepository {
     Mono<Requests> save(Requests requests);
+    Mono<Requests> findById(Integer id);
     Flux<Requests> findByStatus(String status);
     Flux<Requests> findByTypeLoan(String typeLoan);
     Flux<Requests> findByEmail(String email);
