@@ -26,7 +26,7 @@ public class StatusAdapter
     /**
      * Saves a status.
      *
-     * <p>This method logs the status saving process in the info level.
+     * <p>This method logs the status-saving process in the info level.
      *
      * @param status the status to be saved. The status cannot be null.
      * @return a {@link Mono} that emits the saved status or an error if the status name is already taken.
@@ -37,22 +37,25 @@ public class StatusAdapter
         return super.save(status)
                 .doOnSuccess(savedStatus -> log.info("Status saved successfully: {}", savedStatus.getNames()))
                 .doOnError(error -> log.error("Error saving status: {}", error.getMessage()))
-                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
+                .onErrorMap(error -> new RuntimeException(error.getMessage()));
     }
 
+    /**
+     * Finds a status by name.
+     *
+     * <p>This method logs the status-finding process in the info level.
+     *
+     * @param name the name of the status to be found. The name cannot be null or empty.
+     * @return a {@link Mono} that emits the found status or an error if the status cannot be found.
+     */
     @Override
     public Mono<Status> findByName(String name) {
         log.info("Finding status by name: {}", name);
         return repository.findByNames(name)
                 .map(super::toEntity)
-                .doOnSuccess(status -> {
-                    if (status == null) {
-                        log.info("Status not found: {}", name);
-                    } else {
-                        log.info("Status found: {}", status.getNames());
-                    }
-                })
+                .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Status not found with name: {}", name)))
+                .doOnSuccess(status -> log.info("Status found successfully: {}", status.getNames()))
                 .doOnError(error -> log.error("Error finding status: {}", error.getMessage()))
-                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
+                .onErrorMap(error -> new RuntimeException(error.getMessage()));
     }
 }

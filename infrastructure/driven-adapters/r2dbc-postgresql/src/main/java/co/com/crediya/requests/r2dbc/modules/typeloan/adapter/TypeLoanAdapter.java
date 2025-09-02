@@ -39,7 +39,7 @@ public class TypeLoanAdapter
         return super.save(typeLoan)
                 .doOnSuccess(typeLoanSaved -> log.info("Type loan saved: {}", typeLoanSaved.getName()))
                 .doOnError(error -> log.error("Error saving type loan: {}", typeLoan.getName(), error))
-                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
+                .onErrorMap(error -> new RuntimeException(error.getMessage()));
     }
 
     /**
@@ -58,14 +58,9 @@ public class TypeLoanAdapter
         log.info("Finding type loan by name: {}", name);
         return repository.findByNames(name)
                 .map(super::toEntity)
-                .doOnSuccess(typeLoan -> {
-                    if (typeLoan == null) {
-                        log.info("Type loan not found: {}", name);
-                    } else {
-                        log.info("Type loan found: {}", typeLoan.getName());
-                    }
-                })
+                .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Type loan not found with name: {}", name)))
+                .doOnSuccess(typeLoan -> log.info("Type loan found successfully: {}", typeLoan.getName()))
                 .doOnError(error -> log.error("Error finding type loan: {}", error.getMessage()))
-                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
+                .onErrorMap(error -> new RuntimeException(error.getMessage()));
     }
 }
