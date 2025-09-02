@@ -45,7 +45,8 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
         return loanApplicationRepositoryCrud.save(loanApplicationMapper.toRequestsEntity(loanApplication))
                 .flatMap(this::buildRequestsModel)
                 .doOnSuccess(r -> log.info("Request saved successfully: {}", r.getId()))
-                .doOnError(error -> log.error("Error saving request: {}", error.getMessage()));
+                .doOnError(error -> log.error("Error saving request: {}", error.getMessage()))
+                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
     }
 
     /**
@@ -62,7 +63,8 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
         return loanApplicationRepositoryCrud.findById(id)
                 .flatMap(this::buildRequestsModel)
                 .doOnSuccess(r -> log.info("Request found successfully: {}", r.getId()))
-                .doOnError(error -> log.error("Error finding request: {}", error.getMessage()));
+                .doOnError(error -> log.error("Error finding request: {}", error.getMessage()))
+                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
     }
 
     /**
@@ -80,7 +82,8 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
                 .flatMap(this::buildRequestsModel)
                 .doOnNext(r -> log.info("Request found successfully whit id: {} and status: {}", r.getId(), r.getStatus()))
                 .doOnComplete(() -> log.info("LoanApplication found successfully"))
-                .doOnError(error -> log.error("Error finding requests: {}", error.getMessage()));
+                .doOnError(error -> log.error("Error finding requests: {}", error.getMessage()))
+                .onErrorResume(error -> Flux.error(new RuntimeException(error.getMessage())));
     }
 
     /**
@@ -98,7 +101,8 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
                 .flatMap(this::buildRequestsModel)
                 .doOnNext(r -> log.info("Request found successfully whit id: {} and type loan: {}", r.getId(), r.getTypeLoan()))
                 .doOnComplete(() -> log.info("LoanApplication found successfully"))
-                .doOnError(error -> log.error("Error finding requests: {}", error.getMessage()));
+                .doOnError(error -> log.error("Error finding requests: {}", error.getMessage()))
+                .onErrorResume(error -> Flux.error(new RuntimeException(error.getMessage())));
     }
 
     /**
@@ -116,7 +120,8 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
                 .flatMap(this::buildRequestsModel)
                 .doOnNext(r -> log.info("Request found successfully whit id: {} and email: {}", r.getId(), r.getEmail()))
                 .doOnComplete(() -> log.info("LoanApplication found successfully"))
-                .doOnError(error -> log.error("Error finding requests: {}", error.getMessage()));
+                .doOnError(error -> log.error("Error finding requests: {}", error.getMessage()))
+                .onErrorResume(error -> Flux.error(new RuntimeException(error.getMessage())));
     }
 
     /**
@@ -138,6 +143,7 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
                     return loanApplicationMapper.toRequests(loanApplicationEntity, status, typeLoan);
                 })
                 .doOnSuccess(loanApplication -> log.info("Request model built successfully: {}", loanApplication.getId()))
-                .doOnError(error -> log.error("Error building request model: {}", error.getMessage()));
+                .doOnError(error -> log.error("Error building request model: {}", error.getMessage()))
+                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
     }
 }

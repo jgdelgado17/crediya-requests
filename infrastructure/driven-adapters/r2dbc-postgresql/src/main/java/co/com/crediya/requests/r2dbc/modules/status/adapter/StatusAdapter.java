@@ -36,7 +36,8 @@ public class StatusAdapter
         log.info("Saving status: {}", status.getNames());
         return super.save(status)
                 .doOnSuccess(savedStatus -> log.info("Status saved successfully: {}", savedStatus.getNames()))
-                .doOnError(error -> log.error("Error saving status: {}", error.getMessage()));
+                .doOnError(error -> log.error("Error saving status: {}", error.getMessage()))
+                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
     }
 
     @Override
@@ -51,6 +52,7 @@ public class StatusAdapter
                         log.info("Status found: {}", status.getNames());
                     }
                 })
-                .doOnError(error -> log.error("Error finding status: {}", error.getMessage()));
+                .doOnError(error -> log.error("Error finding status: {}", error.getMessage()))
+                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
     }
 }

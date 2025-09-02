@@ -38,7 +38,8 @@ public class TypeLoanAdapter
         log.info("Saving type loan: {}", typeLoan.getName());
         return super.save(typeLoan)
                 .doOnSuccess(typeLoanSaved -> log.info("Type loan saved: {}", typeLoanSaved.getName()))
-                .doOnError(error -> log.error("Error saving type loan: {}", typeLoan.getName(), error));
+                .doOnError(error -> log.error("Error saving type loan: {}", typeLoan.getName(), error))
+                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
     }
 
     /**
@@ -64,6 +65,7 @@ public class TypeLoanAdapter
                         log.info("Type loan found: {}", typeLoan.getName());
                     }
                 })
-                .doOnError(error -> log.error("Error finding type loan: {}", error.getMessage()));
+                .doOnError(error -> log.error("Error finding type loan: {}", error.getMessage()))
+                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
     }
 }

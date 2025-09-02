@@ -7,9 +7,6 @@ import org.springframework.boot.web.reactive.error.ErrorAttributes;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.core.annotation.Order;
-import org.springframework.dao.DataAccessResourceFailureException;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerCodecConfigurer;
@@ -59,16 +56,9 @@ public class GlobalErrorWebExceptionHandler extends AbstractErrorWebExceptionHan
         } else if (error instanceof ServerWebInputException) {
             httpStatus = HttpStatus.BAD_REQUEST;
             errorMessage = "Invalid JSON format or data type mismatch. Please check your input.";
-        } else if (error instanceof DataIntegrityViolationException){
+        } else if (error instanceof RuntimeException){
             httpStatus = HttpStatus.BAD_REQUEST;
-            errorMessage = "The request could not be processed due to a data integrity error.";
-
-            if (error.getCause() instanceof DuplicateKeyException) {
-                errorMessage = "The request could not be processed due to a duplicate key error.";
-            }
-        } else if (error instanceof DataAccessResourceFailureException) {
-            httpStatus = HttpStatus.SERVICE_UNAVAILABLE;
-            errorMessage = "Database service is unavailable. Please try again later.";
+            errorMessage = error.getMessage();
         }
 
         Map<String, Object> errorAttributes = getErrorAttributes(request, ErrorAttributeOptions.defaults());
