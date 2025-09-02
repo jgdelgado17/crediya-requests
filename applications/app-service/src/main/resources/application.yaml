@@ -14,7 +14,7 @@ spring:
 adapters:
   r2dbc:
     host: "localhost"
-    port: 5432
+    port: 5433
     username: "postgres"
     password: "postgres"
     database: "crediya_requests"
