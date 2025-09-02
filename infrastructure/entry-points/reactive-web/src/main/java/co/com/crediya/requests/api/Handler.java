@@ -1,7 +1,11 @@
 package co.com.crediya.requests.api;
 
+import co.com.crediya.requests.api.dto.LoanApplicationRequest;
 import co.com.crediya.requests.api.dto.StatusRequest;
+import co.com.crediya.requests.api.dto.TypeLoanRequest;
+import co.com.crediya.requests.api.mapper.LoanApplicationDataMapper;
 import co.com.crediya.requests.api.mapper.StatusDataMapper;
+import co.com.crediya.requests.api.mapper.TypeLoanDataMapper;
 import co.com.crediya.requests.usecase.loanApplication.LoanApplicationUseCase;
 import co.com.crediya.requests.usecase.status.StatusUseCase;
 import co.com.crediya.requests.usecase.typeloan.TypeLoanUseCase;
@@ -9,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.Validator;
@@ -53,8 +58,69 @@ public class Handler {
                 .map(StatusDataMapper::toStatus)
                 .flatMap(statusUseCase::save)
                 .flatMap(status -> ServerResponse.ok().bodyValue(status))
-                .doOnSuccess(status -> log.info("Status created successfully: {}", status))
-                .doOnError(e -> log.error("Error creating status: {}", e.getMessage()))
-                .onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
+                .doOnSuccess(serverResponse -> log.info("Status created successfully"))
+                .doOnError(e -> log.error("Error creating status: {}", e.getMessage()));
+                //.onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
+    }
+
+    /**
+     * Creates a new type loan with the given parameters.
+     *
+     * <p>This method validates the type loan request, and if it is valid, it creates a new type loan.
+     *
+     * @param request The request to be created.
+     * @return A Mono that emits a saved type loan or an error if the type loan request is not valid.
+     */
+    public Mono<ServerResponse> createTypeLoan(ServerRequest request){
+        log.info("Request received to create type loan");
+        return request.bodyToMono(TypeLoanRequest.class)
+                .doOnNext(typeLoanRequest -> {
+                    BeanPropertyBindingResult errors = new BeanPropertyBindingResult(typeLoanRequest, "typeLoanRequest");
+                    validator.validate(typeLoanRequest, errors);
+                    if (errors.hasErrors()) {
+                        List<String> errorMessages = errors.getAllErrors().stream()
+                                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                                .collect(Collectors.toList());
+                        String fullErrorMessage = "Validation failed: " + String.join(", ", errorMessages);
+                        throw new IllegalArgumentException(fullErrorMessage);
+                    }
+                })
+                .map(TypeLoanDataMapper::toTypeLoan)
+                .flatMap(typeLoanUseCase::createTypeLoan)
+                .flatMap(typeLoan -> ServerResponse.ok().bodyValue(typeLoan))
+                .doOnSuccess(serverResponse -> log.info("Type loan created successfully"))
+                .doOnError(e -> log.error("Error creating type loan: {}", e.getMessage()));
+                //.onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
+    }
+
+    /**
+     * Creates a new loan application with the given parameters.
+     *
+     * <p>This method validates the loan application request, and if it is valid, it creates a new loan application.
+     *
+     * @param request The request to be created.
+     * @return A Mono that emits a saved loan application or an error if the loan application request is not valid.
+     */
+    public Mono<ServerResponse> createLoanApplication(ServerRequest request){
+        log.info("Request received to create loan application");
+        return request.bodyToMono(LoanApplicationRequest.class)
+                .doOnNext(loanApplicationRequest -> {
+                    BeanPropertyBindingResult errors = new BeanPropertyBindingResult(loanApplicationRequest, "loanApplicationRequest");
+                    validator.validate(loanApplicationRequest, errors);
+                    if (errors.hasErrors()) {
+                        List<String> errorMessages = errors.getAllErrors().stream()
+                                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                                .collect(Collectors.toList());
+                        String fullErrorMessage = "Validation failed: " + String.join(", ", errorMessages);
+                        throw new IllegalArgumentException(fullErrorMessage);
+                    }
+                })
+                .map(LoanApplicationDataMapper::toLoanApplication)
+                .flatMap(loanApplicationUseCase::createRequest)
+                .map(LoanApplicationDataMapper::toLoanApplicationResponse)
+                .flatMap(loanApplication -> ServerResponse.ok().bodyValue(loanApplication))
+                .doOnSuccess(serverResponse -> log.info("Loan application created successfully"))
+                .doOnError(e -> log.error("Error creating loan application: {}", e.getMessage()));
+                //.onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
     }
 }
