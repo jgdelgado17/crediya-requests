@@ -1,5 +1,6 @@
 package co.com.crediya.requests.api.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -11,6 +12,7 @@ public record LoanApplicationRequest(
         @NotNull(message = "Term is required")
         int term,
         @NotBlank(message = "Email is required")
+        @Email(message = "must be a correctly formatted email address")
         String email,
         @NotBlank(message = "TypeLoan is required")
         String typeLoan

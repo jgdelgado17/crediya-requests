@@ -3,7 +3,6 @@ package co.com.crediya.requests.api.mapper;
 import co.com.crediya.requests.api.dto.LoanApplicationRequest;
 import co.com.crediya.requests.api.dto.LoanApplicationResponse;
 import co.com.crediya.requests.model.loanApplication.LoanApplication;
-import co.com.crediya.requests.model.status.Status;
 import co.com.crediya.requests.model.typeloan.TypeLoan;
 
 public class LoanApplicationDataMapper {
@@ -12,7 +11,7 @@ public class LoanApplicationDataMapper {
                 .amount(loanApplicationRequest.amount())
                 .term(loanApplicationRequest.term())
                 .email(loanApplicationRequest.email())
-                .typeLoan(TypeLoan.builder().name(loanApplicationRequest.typeLoan()).build())
+                .typeLoan(TypeLoan.builder().names(loanApplicationRequest.typeLoan()).build())
                 .build();
     }
 
@@ -22,7 +21,7 @@ public class LoanApplicationDataMapper {
                 loanApplication.getAmount(),
                 loanApplication.getTerm(),
                 loanApplication.getEmail(),
-                loanApplication.getTypeLoan().getName(),
+                loanApplication.getTypeLoan().getNames(),
                 loanApplication.getStatus().getNames()
         );
     }
