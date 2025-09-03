@@ -28,7 +28,7 @@ public class LoanApplicationUseCase {
      * @return A Mono that emits a saved request or an error if the type loan or status is not found.
      */
     public Mono<LoanApplication> createRequest(LoanApplication request) {
-        return typeLoanRepository.findByName(request.getTypeLoan().getName())
+        return typeLoanRepository.findByName(request.getTypeLoan().getNames())
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Type loan not found in database")))
                 .flatMap(typeLoan -> LoanApplicationValidator.validateAmountInRange(
                         request.getAmount(),
@@ -37,7 +37,7 @@ public class LoanApplicationUseCase {
                 ).thenReturn(typeLoan))
                 .zipWith(
                         statusRepository.findByName(StatusEnum.PENDING_REVIEW.getValue())
-                                .switchIfEmpty(Mono.error(new Exception("Status not found in database")))
+                                .switchIfEmpty(Mono.error(new IllegalArgumentException("Status not found in database")))
                 )
                 .flatMap(tuple -> {
                     var typeLoan = tuple.getT1();
@@ -51,11 +51,11 @@ public class LoanApplicationUseCase {
     /**
      * Finds all requests by status.
      *
-     * <p>This method validates the status name and if it is valid, it finds all requests with the
+     * <p>This method validates the status names and if it is valid, it finds all requests with the
      * given status.
      *
      * @param status the status to be found. The status cannot be null or empty.
-     * @return a Flux that emits all requests with the given status or an error if the status name is
+     * @return a Flux that emits all requests with the given status or an error if the status names is
      * invalid.
      * @see StatusValidator#validateName(String)
      */
@@ -83,11 +83,11 @@ public class LoanApplicationUseCase {
     /**
      * Finds all requests by type loan.
      *
-     * <p>This method validates the type loan name and if it is valid, it finds all requests with the
+     * <p>This method validates the type loan names and if it is valid, it finds all requests with the
      * given type loan.
      *
      * @param typeLoan the type loan to be found. The type loan cannot be null or empty.
-     * @return a Flux that emits all requests with the given type loan or an error if the type loan name is
+     * @return a Flux that emits all requests with the given type loan or an error if the type loan names is
      * invalid.
      * @see TypeLoanValidator#validateName(String)
      */
@@ -99,13 +99,13 @@ public class LoanApplicationUseCase {
     /**
      * Updates the status of a request.
      *
-     * <p>This method first finds a request by id and then finds a status by name.
+     * <p>This method first finds a request by id and then finds a status by names.
      * If the request is not found, an error is returned. If the status is not found,
      * an error is returned. If the request and status are found, the status of the
      * request is updated.
      *
      * @param id the id of the request to be updated.
-     * @param statusName the name of the status to be updated.
+     * @param statusName the names of the status to be updated.
      * @return a Mono that emits the updated request or an error if the request or status is not found.
      */
     public Mono<LoanApplication> updateStatusRequest(Integer id, String statusName) {

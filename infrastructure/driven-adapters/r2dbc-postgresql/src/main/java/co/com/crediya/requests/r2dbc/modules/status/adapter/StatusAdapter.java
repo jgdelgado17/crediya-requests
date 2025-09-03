@@ -29,7 +29,7 @@ public class StatusAdapter
      * <p>This method logs the status-saving process in the info level.
      *
      * @param status the status to be saved. The status cannot be null.
-     * @return a {@link Mono} that emits the saved status or an error if the status name is already taken.
+     * @return a {@link Mono} that emits the saved status or an error if the status names is already taken.
      */
     @Override
     public Mono<Status> save(Status status) {
@@ -41,20 +41,20 @@ public class StatusAdapter
     }
 
     /**
-     * Finds a status by name.
+     * Finds a status by names.
      *
      * <p>This method logs the status-finding process in the info level.
      *
-     * @param name the name of the status to be found. The name cannot be null or empty.
+     * @param name the names of the status to be found. The names cannot be null or empty.
      * @return a {@link Mono} that emits the found status or an error if the status cannot be found.
      */
     @Override
     public Mono<Status> findByName(String name) {
-        log.info("Finding status by name: {}", name);
+        log.info("Finding status by names: {}", name);
         return repository.findByNames(name)
                 .map(super::toEntity)
-                .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Status not found with name: {}", name)))
-                .doOnSuccess(status -> log.info("Status found successfully: {}", status.getNames()))
+                .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Status not found with names: {}", name)))
+                .doOnSuccess(status -> log.info("Status found successfully: {}", name))
                 .doOnError(error -> log.error("Error finding status: {}", error.getMessage()))
                 .onErrorMap(error -> new RuntimeException(error.getMessage()));
     }

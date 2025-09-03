@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 @Builder(toBuilder = true)
 public class TypeLoan {
     private Integer id;
-    private String name;
+    private String names;
     private BigDecimal minAmount;
     private BigDecimal maxAmount;
     private BigDecimal interestRate;

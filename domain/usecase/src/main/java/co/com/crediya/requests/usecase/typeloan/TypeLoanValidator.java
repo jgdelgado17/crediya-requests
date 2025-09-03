@@ -20,12 +20,12 @@ public class TypeLoanValidator {
      * @return a {@link Mono} that emits a valid type loan or an error.
      */
     public static Mono<TypeLoan> validate(TypeLoan typeLoan){
-        if (typeLoan.getName() == null || typeLoan.getName().isEmpty()){
+        if (typeLoan.getNames() == null || typeLoan.getNames().isEmpty()){
             return Mono.error(new IllegalArgumentException(ErrorMessages.requiredField("type loan name")));
         }
 
         try {
-            EnumUtils.fromString(TypeLoanEnum.class, typeLoan.getName());
+            EnumUtils.fromString(TypeLoanEnum.class, typeLoan.getNames());
             return Mono.just(typeLoan);
         } catch (IllegalArgumentException e) {
             return Mono.error(e);

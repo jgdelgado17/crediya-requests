@@ -21,9 +21,9 @@ public class TypeLoanUseCase {
      */
     public Mono<TypeLoan> createTypeLoan(TypeLoan typeLoan) {
         return TypeLoanValidator.validate(typeLoan)
-                .flatMap(validTypeLoan -> typeLoanRepository.findByName(validTypeLoan.getName()))
+                .flatMap(validTypeLoan -> typeLoanRepository.findByName(validTypeLoan.getNames()))
                 .flatMap(existingTypeLoan ->
-                        Mono.error(new IllegalArgumentException(ErrorMessages.objectAlreadyExists(typeLoan.getName())))
+                        Mono.error(new IllegalArgumentException(ErrorMessages.objectAlreadyExists(typeLoan.getNames())))
                 )
                 .cast(TypeLoan.class)
                 .switchIfEmpty(Mono.defer(() -> {
@@ -35,13 +35,13 @@ public class TypeLoanUseCase {
     }
 
     /**
-     * Finds a type loan by name.
+     * Finds a type loan by names.
      *
-     * <p>This method validates the name and if the validation is successful, it finds the
-     * type loan by name.
+     * <p>This method validates the names and if the validation is successful, it finds the
+     * type loan by names.
      *
-     * @param name the name of the type loan to be found. The name cannot be empty.
-     * @return a {@link Mono} that emits the found type loan or an error if the name is empty.
+     * @param name the names of the type loan to be found. The names cannot be empty.
+     * @return a {@link Mono} that emits the found type loan or an error if the names is empty.
      * @see TypeLoanValidator#validateName(String)
      */
     public Mono<TypeLoan> findByName(String name){

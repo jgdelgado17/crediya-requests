@@ -6,7 +6,7 @@ import co.com.crediya.requests.model.typeloan.TypeLoan;
 public class TypeLoanDataMapper {
     public static TypeLoan toTypeLoan(TypeLoanRequest typeLoanRequest){
         return TypeLoan.builder()
-                .name(typeLoanRequest.name())
+                .names(typeLoanRequest.name())
                 .interestRate(typeLoanRequest.interestRate())
                 .minAmount(typeLoanRequest.minAmount())
                 .maxAmount(typeLoanRequest.maxAmount())

@@ -35,31 +35,31 @@ public class TypeLoanAdapter
      */
     @Override
     public Mono<TypeLoan> save(TypeLoan typeLoan) {
-        log.info("Saving type loan: {}", typeLoan.getName());
+        log.info("Saving type loan: {}", typeLoan.getNames());
         return super.save(typeLoan)
-                .doOnSuccess(typeLoanSaved -> log.info("Type loan saved: {}", typeLoanSaved.getName()))
-                .doOnError(error -> log.error("Error saving type loan: {}", typeLoan.getName(), error))
+                .doOnSuccess(typeLoanSaved -> log.info("Type loan saved: {}", typeLoanSaved.getNames()))
+                .doOnError(error -> log.error("Error saving type loan: {}", typeLoan.getNames(), error))
                 .onErrorMap(error -> new RuntimeException(error.getMessage()));
     }
 
     /**
-     * Finds a type loan by name.
+     * Finds a type loan by names.
      *
      * <p>This method logs the beginning of the type loan finding process.
      * If the type loan is found successfully, a {@link Mono} that emits the found type loan
      * is returned. If the type loan cannot be found, a {@link Mono} that emits an empty value is returned.
      * If an error occurs during the finding process, a {@link Mono} that emits an error is returned.
      *
-     * @param name the name of the type loan to be found. The name cannot be null or empty.
+     * @param name the names of the type loan to be found. The names cannot be null or empty.
      * @return a {@link Mono} that emits the found type loan or an error.
      */
     @Override
     public Mono<TypeLoan> findByName(String name) {
-        log.info("Finding type loan by name: {}", name);
+        log.info("Finding type loan by names: {}", name);
         return repository.findByNames(name)
                 .map(super::toEntity)
-                .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Type loan not found with name: {}", name)))
-                .doOnSuccess(typeLoan -> log.info("Type loan found successfully: {}", typeLoan.getName()))
+                .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Type loan not found with names: {}", name)))
+                .doOnSuccess(typeLoan -> log.info("Type loan found successfully: {}", name))
                 .doOnError(error -> log.error("Error finding type loan: {}", error.getMessage()))
                 .onErrorMap(error -> new RuntimeException(error.getMessage()));
     }

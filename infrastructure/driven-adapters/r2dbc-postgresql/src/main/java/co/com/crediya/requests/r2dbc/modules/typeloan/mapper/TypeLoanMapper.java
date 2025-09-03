@@ -9,7 +9,7 @@ public class TypeLoanMapper {
     public TypeLoan toTypeLoan(TypeLoanEntity typeLoanEntity){
         return TypeLoan.builder()
                 .id(typeLoanEntity.getId())
-                .name(typeLoanEntity.getNames())
+                .names(typeLoanEntity.getNames())
                 .minAmount(typeLoanEntity.getMinAmount())
                 .maxAmount(typeLoanEntity.getMaxAmount())
                 .interestRate(typeLoanEntity.getInterestRate())
@@ -20,7 +20,7 @@ public class TypeLoanMapper {
     public TypeLoanEntity toTypeLoanEntity(TypeLoan typeLoan){
         return TypeLoanEntity.builder()
                 .id(typeLoan.getId())
-                .names(typeLoan.getName())
+                .names(typeLoan.getNames())
                 .minAmount(typeLoan.getMinAmount())
                 .maxAmount(typeLoan.getMaxAmount())
                 .interestRate(typeLoan.getInterestRate())
