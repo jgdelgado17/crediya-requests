@@ -23,9 +23,9 @@ public class StatusUseCase {
         return StatusValidator.validate(status)
                 .flatMap(validStatus ->
                         statusRepository.findByName(validStatus.getNames())
-                        .flatMap(existingStatus ->
-                                Mono.error(new IllegalArgumentException(ErrorMessages.objectAlreadyExists(validStatus.getNames()))).cast(Status.class)
-                        )
+                                .flatMap(existingStatus ->
+                                        Mono.error(new IllegalArgumentException(ErrorMessages.objectAlreadyExists(validStatus.getNames()))).cast(Status.class)
+                                )
                                 .switchIfEmpty(Mono.defer(() -> statusRepository.save(validStatus)))
                 );
 

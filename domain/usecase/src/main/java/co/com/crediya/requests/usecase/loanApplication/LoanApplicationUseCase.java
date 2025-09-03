@@ -7,6 +7,7 @@ import co.com.crediya.requests.model.status.Status;
 import co.com.crediya.requests.model.status.StatusEnum;
 import co.com.crediya.requests.model.status.gateways.StatusRepository;
 import co.com.crediya.requests.model.typeloan.gateways.TypeLoanRepository;
+import co.com.crediya.requests.model.user.gateways.UserGateway;
 import co.com.crediya.requests.usecase.status.StatusValidator;
 import co.com.crediya.requests.usecase.typeloan.TypeLoanValidator;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class LoanApplicationUseCase {
     private final LoanApplicationRepository loanApplicationRepository;
     private final TypeLoanRepository typeLoanRepository;
     private final StatusRepository statusRepository;
+    private final UserGateway userGateway;
 
     /**
      * Creates a new request with the given parameters.
@@ -28,24 +30,26 @@ public class LoanApplicationUseCase {
      * @return A Mono that emits a saved request or an error if the type loan or status is not found.
      */
     public Mono<LoanApplication> createRequest(LoanApplication request) {
-        return typeLoanRepository.findByName(request.getTypeLoan().getNames())
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Type loan not found in database")))
-                .flatMap(typeLoan -> LoanApplicationValidator.validateAmountInRange(
-                        request.getAmount(),
-                        typeLoan.getMinAmount(),
-                        typeLoan.getMaxAmount()
-                ).thenReturn(typeLoan))
-                .zipWith(
-                        statusRepository.findByName(StatusEnum.PENDING_REVIEW.getValue())
-                                .switchIfEmpty(Mono.error(new IllegalArgumentException("Status not found in database")))
-                )
-                .flatMap(tuple -> {
-                    var typeLoan = tuple.getT1();
-                    var status = tuple.getT2();
-                    request.setTypeLoan(typeLoan);
-                    request.setStatus(status);
-                    return loanApplicationRepository.save(request);
-                });
+        return userGateway.findUserByEmail(request.getEmail())
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found in System Crediya")))
+                .flatMap(user -> typeLoanRepository.findByName(request.getTypeLoan().getNames())
+                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Type loan not found in database")))
+                        .flatMap(typeLoan -> LoanApplicationValidator.validateAmountInRange(
+                                request.getAmount(),
+                                typeLoan.getMinAmount(),
+                                typeLoan.getMaxAmount()
+                        ).thenReturn(typeLoan))
+                        .zipWith(
+                                statusRepository.findByName(StatusEnum.PENDING_REVIEW.getValue())
+                                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Status not found in database")))
+                        )
+                        .flatMap(tuple -> {
+                            var typeLoan = tuple.getT1();
+                            var status = tuple.getT2();
+                            request.setTypeLoan(typeLoan);
+                            request.setStatus(status);
+                            return loanApplicationRepository.save(request);
+                        }));
     }
 
     /**
@@ -59,7 +63,7 @@ public class LoanApplicationUseCase {
      * invalid.
      * @see StatusValidator#validateName(String)
      */
-    public Flux<LoanApplication> findRequestByStatus(String status){
+    public Flux<LoanApplication> findRequestByStatus(String status) {
         return StatusValidator.validateName(status)
                 .flatMapMany(loanApplicationRepository::findByStatus);
     }
@@ -75,7 +79,7 @@ public class LoanApplicationUseCase {
      * invalid.
      * @see LoanApplicationValidator#validateEmail(String)
      */
-    public Flux<LoanApplication> findRequestByEmail(String email){
+    public Flux<LoanApplication> findRequestByEmail(String email) {
         return LoanApplicationValidator.validateEmail(email)
                 .flatMapMany(loanApplicationRepository::findByEmail);
     }
@@ -91,7 +95,7 @@ public class LoanApplicationUseCase {
      * invalid.
      * @see TypeLoanValidator#validateName(String)
      */
-    public Flux<LoanApplication> findRequestByTypeLoan(String typeLoan){
+    public Flux<LoanApplication> findRequestByTypeLoan(String typeLoan) {
         return TypeLoanValidator.validateName(typeLoan)
                 .flatMapMany(loanApplicationRepository::findByTypeLoan);
     }
@@ -104,7 +108,7 @@ public class LoanApplicationUseCase {
      * an error is returned. If the request and status are found, the status of the
      * request is updated.
      *
-     * @param id the id of the request to be updated.
+     * @param id         the id of the request to be updated.
      * @param statusName the names of the status to be updated.
      * @return a Mono that emits the updated request or an error if the request or status is not found.
      */
@@ -114,7 +118,7 @@ public class LoanApplicationUseCase {
                 .zipWith(StatusValidator.validateName(statusName)
                         .flatMap(status -> statusRepository.findByName(statusName)
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException(ErrorMessages.notFoundMessage(Status.class, statusName))))
-                ))
+                        ))
                 .flatMap(tuple -> {
                     var request = tuple.getT1();
                     var status = tuple.getT2();
