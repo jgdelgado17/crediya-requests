@@ -1,18 +1,18 @@
 version: "3.9"
 
 services:
-  postgres-db:
+  requests-db:
     image: postgres:15
-    container_name: postgres-db
+    container_name: crediya-requests-db
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: crediya_requests
     ports:
-      - "5433:5433"
+      - "5433:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - pg_requests_data:/var/lib/postgresql/data
 
 volumes:
-  pg_data:
+  pg_requests_data:

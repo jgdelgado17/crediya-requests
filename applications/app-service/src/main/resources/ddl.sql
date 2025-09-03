@@ -25,8 +25,12 @@ CREATE TABLE IF NOT EXISTS requests (
     type_loan INTEGER NOT NULL,
     CONSTRAINT fk_status
         FOREIGN KEY (status)
-        REFERENCES status(id),
+        REFERENCES status(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
     CONSTRAINT fk_type_loan
         FOREIGN KEY (type_loan)
         REFERENCES type_loan(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
 );
