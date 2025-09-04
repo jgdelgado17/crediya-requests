@@ -54,7 +54,6 @@ public class StatusAdapter
         return repository.findByNames(name)
                 .map(super::toEntity)
                 .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Status not found with names: {}", name)))
-                .doOnSuccess(status -> log.info("Status found successfully: {}", name))
                 .doOnError(error -> log.error("Error finding status: {}", error.getMessage()))
                 .onErrorMap(error -> new RuntimeException(error.getMessage()));
     }

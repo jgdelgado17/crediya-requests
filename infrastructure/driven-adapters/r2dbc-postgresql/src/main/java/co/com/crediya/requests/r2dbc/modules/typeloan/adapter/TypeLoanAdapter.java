@@ -59,7 +59,6 @@ public class TypeLoanAdapter
         return repository.findByNames(name)
                 .map(super::toEntity)
                 .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Type loan not found with names: {}", name)))
-                .doOnSuccess(typeLoan -> log.info("Type loan found successfully: {}", name))
                 .doOnError(error -> log.error("Error finding type loan: {}", error.getMessage()))
                 .onErrorMap(error -> new RuntimeException(error.getMessage()));
     }

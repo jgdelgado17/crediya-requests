@@ -99,7 +99,7 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
         log.info("Finding requests by type loan: {}", typeLoan);
         return loanApplicationRepositoryCrud.findByTypeLoan(typeLoan)
                 .flatMap(this::buildRequestsModel)
-                .doOnNext(r -> log.info("Loan application found successfully: ID = {}, Type Loan = {}", r.getId(), r.getTypeLoan()))
+                .doOnNext(r -> log.info("Loan application found successfully: ID = {}, Type Loan = {}", r.getId(), r.getTypeLoan().getNames()))
                 .doOnComplete(() -> log.info("Search for loan applications completed for type loan: {}", typeLoan))
                 .doOnError(e -> log.error("Error finding loan applications by type loan {}: {}", typeLoan, e.getMessage()))
                 .onErrorMap(e -> new RuntimeException("Error finding loan applications by type loan: " + typeLoan, e));
