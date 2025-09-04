@@ -8,6 +8,7 @@ import co.com.crediya.requests.model.status.Status;
 import co.com.crediya.requests.model.typeloan.TypeLoan;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -42,7 +43,34 @@ public class RouterRest {
                                     description = "Status to be created",
                                     required = true,
                                     content = @Content(
-                                            schema = @Schema(implementation = StatusRequest.class)
+                                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                            schema = @Schema(implementation = StatusRequest.class),
+                                            examples = {
+                                                    @ExampleObject(
+                                                            name = "Example Status PENDING_REVIEW",
+                                                            summary = "Example Status PENDING_REVIEW",
+                                                            value = "{\"name\": \"PENDING_REVIEW\"," +
+                                                                    "\"description\": \"Pending review\"}"
+                                                    ),
+                                                    @ExampleObject(
+                                                            name = "Example Status MANUAL_REVIEW",
+                                                            summary = "Example Status MANUAL_REVIEW",
+                                                            value = "{\"name\": \"MANUAL_REVIEW\"," +
+                                                                    "\"description\": \"Manual review\"}"
+                                                    ),
+                                                    @ExampleObject(
+                                                            name = "Example Status APPROVED",
+                                                            summary = "Example Status APPROVED",
+                                                            value = "{\"name\": \"APPROVED\"," +
+                                                                    "\"description\": \"Approved\"}"
+                                                    ),
+                                                    @ExampleObject(
+                                                            name = "Example Status REJECTED",
+                                                            summary = "Example Status REJECTED",
+                                                            value = "{\"name\": \"REJECTED\"," +
+                                                                    "\"description\": \"Rejected\"}"
+                                                    )
+                                            }
                                     )
                             ),
                             responses = {
@@ -81,7 +109,30 @@ public class RouterRest {
                                     description = "Type loan to be created",
                                     required = true,
                                     content = @Content(
-                                            schema = @Schema(implementation = TypeLoanRequest.class)
+                                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                            schema = @Schema(implementation = TypeLoanRequest.class),
+                                            examples = {
+                                                    @ExampleObject(
+                                                            name = "Example PERSONAL",
+                                                            summary = "Example PERSONAL",
+                                                            value = "{\"name\": \"PERSONAL\",\"description\": \"Personal\"}"
+                                                    ),
+                                                    @ExampleObject(
+                                                            name = "Example CONSUMER",
+                                                            summary = "Example CONSUMER",
+                                                            value = "{\"name\": \"CONSUMER\",\"description\": \"Consumer\"}"
+                                                    ),
+                                                    @ExampleObject(
+                                                            name = "Example MORTGAGE",
+                                                            summary = "Example MORTGAGE",
+                                                            value = "{\"name\": \"MORTGAGE\",\"description\": \"Mortgage\"}"
+                                                    ),
+                                                    @ExampleObject(
+                                                            name = "Example AUTOMOTIVE",
+                                                            summary = "Example AUTOMOTIVE",
+                                                            value = "{\"name\": \"AUTOMOTIVE\",\"description\": \"Automotive\"}"
+                                                    )
+                                            }
                                     )
                             ),
                             responses = {
