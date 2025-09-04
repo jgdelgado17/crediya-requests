@@ -3,6 +3,7 @@ package co.com.crediya.requests.usecase.loanApplication;
 import co.com.crediya.requests.model.loanApplication.LoanApplication;
 import co.com.crediya.requests.model.loanApplication.gateways.LoanApplicationRepository;
 import co.com.crediya.requests.model.shared.exceptions.ErrorMessages;
+import co.com.crediya.requests.model.shared.exceptions.RecordNotFoundException;
 import co.com.crediya.requests.model.status.Status;
 import co.com.crediya.requests.model.status.StatusEnum;
 import co.com.crediya.requests.model.status.gateways.StatusRepository;
@@ -31,9 +32,9 @@ public class LoanApplicationUseCase {
      */
     public Mono<LoanApplication> createRequest(LoanApplication request) {
         return userGateway.findUserByEmail(request.getEmail())
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found in System Crediya")))
+                .switchIfEmpty(Mono.error(new RecordNotFoundException("User with email " + request.getEmail() + " not found in System Crediya")))
                 .flatMap(user -> typeLoanRepository.findByName(request.getTypeLoan().getNames())
-                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Type loan not found in database")))
+                        .switchIfEmpty(Mono.error(new RecordNotFoundException("Type loan " + request.getTypeLoan().getNames() + " not found in database")))
                         .flatMap(typeLoan -> LoanApplicationValidator.validateAmountInRange(
                                 request.getAmount(),
                                 typeLoan.getMinAmount(),
@@ -41,7 +42,7 @@ public class LoanApplicationUseCase {
                         ).thenReturn(typeLoan))
                         .zipWith(
                                 statusRepository.findByName(StatusEnum.PENDING_REVIEW.getValue())
-                                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Status not found in database")))
+                                        .switchIfEmpty(Mono.error(new RecordNotFoundException("Status not found in database")))
                         )
                         .flatMap(tuple -> {
                             var typeLoan = tuple.getT1();
@@ -114,10 +115,10 @@ public class LoanApplicationUseCase {
      */
     public Mono<LoanApplication> updateStatusRequest(Integer id, String statusName) {
         return loanApplicationRepository.findById(id)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException(ErrorMessages.notFoundMessage(LoanApplication.class, id))))
+                .switchIfEmpty(Mono.error(new RecordNotFoundException(ErrorMessages.notFoundMessage(LoanApplication.class, id))))
                 .zipWith(StatusValidator.validateName(statusName)
                         .flatMap(status -> statusRepository.findByName(statusName)
-                                .switchIfEmpty(Mono.error(new IllegalArgumentException(ErrorMessages.notFoundMessage(Status.class, statusName))))
+                                .switchIfEmpty(Mono.error(new RecordNotFoundException(ErrorMessages.notFoundMessage(Status.class, statusName))))
                         ))
                 .flatMap(tuple -> {
                     var request = tuple.getT1();

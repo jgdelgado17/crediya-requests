@@ -3,7 +3,9 @@ package co.com.crediya.requests.r2dbc.modules.loanApplication.adapter;
 import co.com.crediya.requests.model.loanApplication.LoanApplication;
 import co.com.crediya.requests.model.loanApplication.gateways.LoanApplicationRepository;
 import co.com.crediya.requests.model.shared.exceptions.ErrorMessages;
+import co.com.crediya.requests.model.shared.exceptions.RecordNotFoundException;
 import co.com.crediya.requests.model.status.Status;
+import co.com.crediya.requests.model.typeloan.TypeLoan;
 import co.com.crediya.requests.r2dbc.modules.loanApplication.data.LoanApplicationEntity;
 import co.com.crediya.requests.r2dbc.modules.loanApplication.mapper.LoanApplicationMapper;
 import co.com.crediya.requests.r2dbc.modules.loanApplication.repository.LoanApplicationRepositoryCrud;
@@ -135,8 +137,11 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
      */
     private Mono<LoanApplication> buildRequestsModel(LoanApplicationEntity loanApplicationEntity) {
         return statusRepositoryCrud.findById(loanApplicationEntity.getStatus())
-                .switchIfEmpty(Mono.error(new IllegalArgumentException(ErrorMessages.notFoundMessage(Status.class, loanApplicationEntity.getStatus()))))
-                .zipWith(typeLoanRepositoryCrud.findById(loanApplicationEntity.getTypeLoan()))
+                .switchIfEmpty(Mono.error(new RecordNotFoundException(ErrorMessages.notFoundMessage(Status.class, loanApplicationEntity.getStatus()))))
+                .zipWith(
+                        typeLoanRepositoryCrud.findById(loanApplicationEntity.getTypeLoan())
+                                .switchIfEmpty(Mono.error(new RecordNotFoundException(ErrorMessages.notFoundMessage(TypeLoan.class, loanApplicationEntity.getTypeLoan()))))
+                )
                 .map(tuple -> {
                     var status = statusMapper.toModel(tuple.getT1());
                     var typeLoan = typeLoanMapper.toTypeLoan(tuple.getT2());

@@ -1,5 +1,6 @@
 package co.com.crediya.requests.consumer;
 
+import co.com.crediya.requests.model.shared.exceptions.RecordNotFoundException;
 import co.com.crediya.requests.model.user.User;
 import co.com.crediya.requests.model.user.gateways.UserGateway;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -25,7 +26,7 @@ public class RestConsumer implements UserGateway {
                 .uri("/users/{email}", email)
                 .retrieve()
                 .bodyToMono(User.class)
-                .switchIfEmpty(Mono.error(new RuntimeException("User not found with email: " + email)))
+                .switchIfEmpty(Mono.error(new RecordNotFoundException("User not found with email: " + email)))
                 .doOnSuccess(user -> log.info("User found successfully"))
                 .doOnError(error -> log.error("Error finding user: {}", error.getMessage()));
     }

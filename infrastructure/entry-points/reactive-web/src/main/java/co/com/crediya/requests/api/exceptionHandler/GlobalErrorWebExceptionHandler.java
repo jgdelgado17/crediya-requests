@@ -1,5 +1,6 @@
 package co.com.crediya.requests.api.exceptionHandler;
 
+import co.com.crediya.requests.model.shared.exceptions.RecordNotFoundException;
 import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.autoconfigure.web.reactive.error.AbstractErrorWebExceptionHandler;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -44,7 +45,10 @@ public class GlobalErrorWebExceptionHandler extends AbstractErrorWebExceptionHan
         HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         String errorMessage = "Internal Server Error";
 
-        if (error instanceof WebExchangeBindException bindException) {
+        if (error instanceof RecordNotFoundException){
+            httpStatus = HttpStatus.NOT_FOUND;
+            errorMessage = error.getMessage();
+        } else if (error instanceof WebExchangeBindException bindException) {
             httpStatus = HttpStatus.BAD_REQUEST;
             List<String> errors = bindException.getAllErrors().stream()
                     .map(DefaultMessageSourceResolvable::getDefaultMessage)
