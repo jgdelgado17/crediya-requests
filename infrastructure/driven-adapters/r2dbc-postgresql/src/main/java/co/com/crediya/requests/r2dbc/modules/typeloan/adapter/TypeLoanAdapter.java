@@ -1,0 +1,65 @@
+package co.com.crediya.requests.r2dbc.modules.typeloan.adapter;
+
+import co.com.crediya.requests.model.typeloan.TypeLoan;
+import co.com.crediya.requests.model.typeloan.gateways.TypeLoanRepository;
+import co.com.crediya.requests.r2dbc.helper.ReactiveAdapterOperations;
+import co.com.crediya.requests.r2dbc.modules.typeloan.data.TypeLoanEntity;
+import co.com.crediya.requests.r2dbc.modules.typeloan.repository.TypeLoanRepositoryCrud;
+import org.reactivecommons.utils.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+
+@Service
+public class TypeLoanAdapter
+    extends ReactiveAdapterOperations<TypeLoan, TypeLoanEntity, Integer, TypeLoanRepositoryCrud>
+    implements TypeLoanRepository {
+
+    private static final Logger log = LoggerFactory.getLogger(TypeLoanAdapter.class);
+
+    protected TypeLoanAdapter(TypeLoanRepositoryCrud repository, ObjectMapper mapper) {
+        super(repository, mapper, d -> mapper.map(d, TypeLoan.class));
+        this.repository = repository;
+    }
+
+    /**
+     * Saves a type loan.
+     *
+     * <p>This method logs the beginning and the end of the type loan saving process.
+     * If the type loan is saved successfully, a {@link Mono} that emits the saved type loan
+     * is returned. If the type loan cannot be saved, a {@link Mono} that emits an error is returned.
+     *
+     * @param typeLoan the type loan to be saved. The type loan cannot be null.
+     * @return a {@link Mono} that emits the saved type loan or an error.
+     */
+    @Override
+    public Mono<TypeLoan> save(TypeLoan typeLoan) {
+        log.info("Saving type loan: {}", typeLoan.getNames());
+        return super.save(typeLoan)
+                .doOnSuccess(typeLoanSaved -> log.info("Type loan saved: {}", typeLoanSaved.getNames()))
+                .doOnError(error -> log.error("Error saving type loan: {}", typeLoan.getNames(), error))
+                .onErrorMap(error -> new RuntimeException(error.getMessage()));
+    }
+
+    /**
+     * Finds a type loan by names.
+     *
+     * <p>This method logs the beginning of the type loan finding process.
+     * If the type loan is found successfully, a {@link Mono} that emits the found type loan
+     * is returned. If the type loan cannot be found, a {@link Mono} that emits an empty value is returned.
+     * If an error occurs during the finding process, a {@link Mono} that emits an error is returned.
+     *
+     * @param name the names of the type loan to be found. The names cannot be null or empty.
+     * @return a {@link Mono} that emits the found type loan or an error.
+     */
+    @Override
+    public Mono<TypeLoan> findByName(String name) {
+        log.info("Finding type loan by names: {}", name);
+        return repository.findByNames(name)
+                .map(super::toEntity)
+                .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Type loan not found with names: {}", name)))
+                .doOnError(error -> log.error("Error finding type loan: {}", error.getMessage()))
+                .onErrorMap(error -> new RuntimeException(error.getMessage()));
+    }
+}
