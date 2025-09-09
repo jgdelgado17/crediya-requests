@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.Validator;
@@ -21,7 +20,10 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -103,6 +105,22 @@ public class Handler {
      */
     public Mono<ServerResponse> createLoanApplication(ServerRequest request){
         log.info("Request received to create loan application");
+
+        String token = request.headers().firstHeader("Authorization");
+
+        if (token == null || token.isEmpty() || !token.startsWith("Bearer ")) {
+            log.error("Authorization header is missing or malformed.");
+
+            Map<String, Object> errorBody = new HashMap<>();
+            errorBody.put("timestamp", new Date());
+            errorBody.put("status", 401);
+            errorBody.put("error", "Unauthorized");
+            errorBody.put("message", "Authorization header is missing or invalid.");
+            return ServerResponse.status(401).bodyValue(errorBody);
+        }
+
+        String rawToken = token.substring(7);
+
         return request.bodyToMono(LoanApplicationRequest.class)
                 .doOnNext(loanApplicationRequest -> {
                     BeanPropertyBindingResult errors = new BeanPropertyBindingResult(loanApplicationRequest, "loanApplicationRequest");
@@ -116,7 +134,7 @@ public class Handler {
                     }
                 })
                 .map(LoanApplicationDataMapper::toLoanApplication)
-                .flatMap(loanApplicationUseCase::createRequest)
+                .flatMap(loanApplication -> loanApplicationUseCase.createRequest(loanApplication, rawToken))
                 .map(LoanApplicationDataMapper::toLoanApplicationResponse)
                 .flatMap(loanApplication -> ServerResponse.ok().bodyValue(loanApplication))
                 .doOnSuccess(serverResponse -> log.info("Loan application created successfully"))

@@ -30,8 +30,8 @@ public class LoanApplicationUseCase {
      * @param request The request to be created.
      * @return A Mono that emits a saved request or an error if the type loan or status is not found.
      */
-    public Mono<LoanApplication> createRequest(LoanApplication request) {
-        return userGateway.findUserByEmail(request.getEmail())
+    public Mono<LoanApplication> createRequest(LoanApplication request, String token) {
+        return userGateway.findUserByEmail(request.getEmail(), token)
                 .switchIfEmpty(Mono.error(new RecordNotFoundException("User with email " + request.getEmail() + " not found in System Crediya")))
                 .flatMap(user -> typeLoanRepository.findByName(request.getTypeLoan().getNames())
                         .switchIfEmpty(Mono.error(new RecordNotFoundException("Type loan " + request.getTypeLoan().getNames() + " not found in database")))

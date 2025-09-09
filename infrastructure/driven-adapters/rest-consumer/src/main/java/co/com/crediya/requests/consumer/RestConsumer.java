@@ -7,6 +7,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -19,11 +20,12 @@ public class RestConsumer implements UserGateway {
 
     @Override
     @CircuitBreaker(name = "validateEmailUser")
-    public Mono<User> findUserByEmail(String email) {
+    public Mono<User> findUserByEmail(String email, String token) {
         log.info("Finding user by email: {}", email);
         return client
                 .get()
                 .uri("/users/{email}", email)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .retrieve()
                 .bodyToMono(User.class)
                 .switchIfEmpty(Mono.error(new RecordNotFoundException("User not found with email: " + email)))
