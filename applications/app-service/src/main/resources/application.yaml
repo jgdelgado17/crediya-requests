@@ -13,11 +13,11 @@ spring:
     include: null
 adapters:
   r2dbc:
-    host: "localhost"
-    port: 5433
-    username: "postgres"
-    password: "postgres"
-    database: "crediya_requests"
+    host: "${DB_HOST}"
+    port: ${DB_PORT}
+    username: "${DB_USERNAME}"
+    password: "${DB_PASSWORD}"
+    database: "${DB_DATABASE}"
     schema: "public"
 management:
   endpoints:
@@ -32,11 +32,12 @@ management:
     circuitbreakers:
       enabled: true
 cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080"
+  allowed-origins: "${CORS_ALLOWED_ORIGINS}"
 adapter:
   restconsumer:
     timeout: 5000
-    url: "http://localhost:8080/api/v1"
+    url: "${ADAPTER_RESTCONSUMER_URL}"
+    uri-user: "${ADAPTER_RESTCONSUMER_URI_USER}"
 resilience4j:
   circuitbreaker:
     instances:
