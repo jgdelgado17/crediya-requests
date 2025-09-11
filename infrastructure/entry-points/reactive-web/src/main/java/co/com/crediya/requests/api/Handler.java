@@ -13,6 +13,8 @@ import co.com.crediya.requests.usecase.loanApplication.LoanApplicationUseCase;
 import co.com.crediya.requests.usecase.status.StatusUseCase;
 import co.com.crediya.requests.usecase.typeloan.TypeLoanUseCase;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -277,5 +279,66 @@ public class Handler {
                 .doOnSuccess(serverResponse -> log.info("Loan application created successfully"))
                 .doOnError(e -> log.error("Error creating loan application: {}", e.getMessage()));
                 //.onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
+    }
+
+    @Operation(
+            tags = {"LoanApplication"},
+            operationId = "listManualReviewRequests",
+            summary = "List loan applications for manual review",
+            description = "Retrieves a paginated list of loan applications that require manual review.",
+            parameters = {
+                    @Parameter(
+                            in = ParameterIn.QUERY,
+                            name = "page",
+                            description = "Page number (starting from 0)",
+                            required = false,
+                            schema = @Schema(type = "integer", defaultValue = "0")
+                    ),
+                    @Parameter(
+                            in = ParameterIn.QUERY,
+                            name = "size",
+                            description = "Number of items per page",
+                            required = false,
+                            schema = @Schema(type = "integer", defaultValue = "10")
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "List of loan applications for manual review",
+                            content = @Content(
+                                    schema = @Schema(implementation = LoanApplicationResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid page or size parameters",
+                            content = @Content(schema = @Schema(implementation = Error.class))
+                    )
+            }
+    )
+    public Mono<ServerResponse> listManualReviewRequests(ServerRequest request) {
+        log.info("Request received to list manual review requests");
+
+        int page = request.queryParam("page")
+                .map(Integer::parseInt)
+                .orElse(0);
+
+        int size = request.queryParam("size")
+                .map(Integer::parseInt)
+                .orElse(10);
+
+        if (page < 0 || size <= 0) {
+            log.error("Invalid page or size parameters");
+            return ServerResponse.badRequest().bodyValue("Page must be non-negative and size must be positive.");
+        }
+
+        return loanApplicationUseCase.findRequestsForManualReview(page, size)
+                .map(LoanApplicationDataMapper::toLoanApplicationResponse)
+                .collectList()
+                .flatMap(responseList -> ServerResponse.ok().bodyValue(responseList))
+                .doOnSuccess(serverResponse -> log.info("Manual review requests listed successfully"))
+                .doOnError(e -> log.error("Error listing manual review requests: {}", e.getMessage()))
+                .onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
     }
 }

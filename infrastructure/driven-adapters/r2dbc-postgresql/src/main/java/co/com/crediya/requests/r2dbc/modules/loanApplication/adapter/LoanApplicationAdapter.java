@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class LoanApplicationAdapter implements LoanApplicationRepository {
@@ -124,6 +126,24 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
                 .doOnComplete(() -> log.info("Search for loan applications completed for email: {}", email))
                 .doOnError(e -> log.error("Error finding loan applications by email {}: {}", email, e.getMessage()))
                 .onErrorMap(e -> new RuntimeException("Error finding loan applications by email: " + email, e));
+    }
+
+    /**
+     * Finds all requests by multiple statuses.
+     *
+     * <p>This method logs the request finding process in the info level.
+     *
+     * @param statuses the statuses of the requests to be found. The statuses cannot be null or empty.
+     * @return a {@link Flux} that emits all requests with the given statuses or an error if they cannot be found.
+     */
+    @Override
+    public Flux<LoanApplication> findByStatusIn(List<String> statuses) {
+        log.info("Finding loan applications by multiple statuses: {}", statuses);
+        return loanApplicationRepositoryCrud.findByStatusIn(statuses)
+                .flatMap(this::buildRequestsModel)
+                .doOnComplete(() -> log.info("Search for loan applications completed for multiple statuses: {}", statuses))
+                .doOnError(e -> log.error("Error finding loan applications by statuses {}: {}", statuses, e.getMessage()))
+                .onErrorMap(e -> new RuntimeException("Error finding loan applications by statuses: " + statuses, e));
     }
 
     /**

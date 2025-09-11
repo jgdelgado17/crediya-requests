@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RequiredArgsConstructor
 public class LoanApplicationUseCase {
     private final LoanApplicationRepository loanApplicationRepository;
@@ -126,5 +128,24 @@ public class LoanApplicationUseCase {
                     request.setStatus(status);
                     return loanApplicationRepository.save(request);
                 });
+    }
+
+    public Flux<LoanApplication> findRequestsForManualReview(int page, int size)  {
+        List<String> statusNames = List.of(
+                StatusEnum.PENDING_REVIEW.getValue(),
+                StatusEnum.REJECTED.getValue(),
+                StatusEnum.MANUAL_REVIEW.getValue()
+        );
+
+        Flux<String> statusIdsFlux = Flux.fromIterable(statusNames)
+                .flatMap(statusRepository::findByName)
+                .map(status -> status.getId().toString());
+
+        int offset = page * size;
+
+        return statusIdsFlux.collectList()
+                .flatMapMany(loanApplicationRepository::findByStatusIn)
+                .skip(offset)
+                .take(size);
     }
 }
