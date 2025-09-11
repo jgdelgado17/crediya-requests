@@ -7,8 +7,10 @@ import co.com.crediya.requests.api.dto.TypeLoanRequest;
 import co.com.crediya.requests.api.mapper.LoanApplicationDataMapper;
 import co.com.crediya.requests.api.mapper.StatusDataMapper;
 import co.com.crediya.requests.api.mapper.TypeLoanDataMapper;
+import co.com.crediya.requests.model.shared.exceptions.UnauthorizedException;
 import co.com.crediya.requests.model.status.Status;
 import co.com.crediya.requests.model.typeloan.TypeLoan;
+import co.com.crediya.requests.model.user.UserLoanStatus;
 import co.com.crediya.requests.usecase.loanApplication.LoanApplicationUseCase;
 import co.com.crediya.requests.usecase.status.StatusUseCase;
 import co.com.crediya.requests.usecase.typeloan.TypeLoanUseCase;
@@ -32,10 +34,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -106,7 +105,7 @@ public class Handler {
                     )
             }
     )
-    public Mono<ServerResponse> createStatus(ServerRequest request){
+    public Mono<ServerResponse> createStatus(ServerRequest request) {
         log.info("Request received to create status");
         return request.bodyToMono(StatusRequest.class)
                 .doOnNext(statusRequest -> {
@@ -125,7 +124,7 @@ public class Handler {
                 .flatMap(status -> ServerResponse.ok().bodyValue(status))
                 .doOnSuccess(serverResponse -> log.info("Status created successfully"))
                 .doOnError(e -> log.error("Error creating status: {}", e.getMessage()));
-                //.onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
+        //.onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
     }
 
     @Operation(
@@ -183,7 +182,7 @@ public class Handler {
                     )
             }
     )
-    public Mono<ServerResponse> createTypeLoan(ServerRequest request){
+    public Mono<ServerResponse> createTypeLoan(ServerRequest request) {
         log.info("Request received to create type loan");
         return request.bodyToMono(TypeLoanRequest.class)
                 .doOnNext(typeLoanRequest -> {
@@ -202,7 +201,7 @@ public class Handler {
                 .flatMap(typeLoan -> ServerResponse.ok().bodyValue(typeLoan))
                 .doOnSuccess(serverResponse -> log.info("Type loan created successfully"))
                 .doOnError(e -> log.error("Error creating type loan: {}", e.getMessage()));
-                //.onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
+        //.onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
     }
 
     @Operation(
@@ -242,43 +241,29 @@ public class Handler {
                     )
             }
     )
-    public Mono<ServerResponse> createLoanApplication(ServerRequest request){
+    public Mono<ServerResponse> createLoanApplication(ServerRequest request) {
         log.info("Request received to create loan application");
 
-        String token = request.headers().firstHeader("Authorization");
-
-        if (token == null || token.isEmpty() || !token.startsWith("Bearer ")) {
-            log.error("Authorization header is missing or malformed.");
-
-            Map<String, Object> errorBody = new HashMap<>();
-            errorBody.put("timestamp", new Date());
-            errorBody.put("status", 401);
-            errorBody.put("error", "Unauthorized");
-            errorBody.put("message", "Authorization header is missing or invalid.");
-            return ServerResponse.status(401).bodyValue(errorBody);
-        }
-
-        String rawToken = token.substring(7);
-
-        return request.bodyToMono(LoanApplicationRequest.class)
-                .doOnNext(loanApplicationRequest -> {
-                    BeanPropertyBindingResult errors = new BeanPropertyBindingResult(loanApplicationRequest, "loanApplicationRequest");
-                    validator.validate(loanApplicationRequest, errors);
-                    if (errors.hasErrors()) {
-                        List<String> errorMessages = errors.getAllErrors().stream()
-                                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                                .collect(Collectors.toList());
-                        String fullErrorMessage = "Validation failed: " + String.join(", ", errorMessages);
-                        throw new IllegalArgumentException(fullErrorMessage);
-                    }
-                })
-                .map(LoanApplicationDataMapper::toLoanApplication)
-                .flatMap(loanApplication -> loanApplicationUseCase.createRequest(loanApplication, rawToken))
-                .map(LoanApplicationDataMapper::toLoanApplicationResponse)
-                .flatMap(loanApplication -> ServerResponse.ok().bodyValue(loanApplication))
-                .doOnSuccess(serverResponse -> log.info("Loan application created successfully"))
+        return extractAndValidateToken(request)
+                .flatMap(rawToken -> request.bodyToMono(LoanApplicationRequest.class)
+                        .doOnNext(loanApplicationRequest -> {
+                            BeanPropertyBindingResult errors = new BeanPropertyBindingResult(loanApplicationRequest, "loanApplicationRequest");
+                            validator.validate(loanApplicationRequest, errors);
+                            if (errors.hasErrors()) {
+                                List<String> errorMessages = errors.getAllErrors().stream()
+                                        .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                                        .collect(Collectors.toList());
+                                String fullErrorMessage = "Validation failed: " + String.join(", ", errorMessages);
+                                throw new IllegalArgumentException(fullErrorMessage);
+                            }
+                        })
+                        .map(LoanApplicationDataMapper::toLoanApplication)
+                        .flatMap(loanApplication -> loanApplicationUseCase.createRequest(loanApplication, rawToken))
+                        .map(LoanApplicationDataMapper::toLoanApplicationResponse)
+                        .flatMap(loanApplication -> ServerResponse.ok().bodyValue(loanApplication))
+                        .doOnSuccess(serverResponse -> log.info("Loan application created successfully"))
+                )
                 .doOnError(e -> log.error("Error creating loan application: {}", e.getMessage()));
-                //.onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
     }
 
     @Operation(
@@ -307,12 +292,22 @@ public class Handler {
                             responseCode = "200",
                             description = "List of loan applications for manual review",
                             content = @Content(
-                                    schema = @Schema(implementation = LoanApplicationResponse.class)
+                                    schema = @Schema(implementation = UserLoanStatus.class)
                             )
                     ),
                     @ApiResponse(
                             responseCode = "400",
                             description = "Invalid page or size parameters",
+                            content = @Content(schema = @Schema(implementation = Error.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Unauthorized",
+                            content = @Content(schema = @Schema(implementation = Error.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal server error",
                             content = @Content(schema = @Schema(implementation = Error.class))
                     )
             }
@@ -330,15 +325,27 @@ public class Handler {
 
         if (page < 0 || size <= 0) {
             log.error("Invalid page or size parameters");
-            return ServerResponse.badRequest().bodyValue("Page must be non-negative and size must be positive.");
+            return Mono.error(new IllegalArgumentException("Page must be non-negative and size must be positive."));
         }
 
-        return loanApplicationUseCase.findRequestsForManualReview(page, size)
-                .map(LoanApplicationDataMapper::toLoanApplicationResponse)
-                .collectList()
-                .flatMap(responseList -> ServerResponse.ok().bodyValue(responseList))
-                .doOnSuccess(serverResponse -> log.info("Manual review requests listed successfully"))
-                .doOnError(e -> log.error("Error listing manual review requests: {}", e.getMessage()))
-                .onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()));
+        return extractAndValidateToken(request)
+                .flatMap(rawToken -> loanApplicationUseCase.findRequestsForManualReview(page, size, rawToken)
+                        .collectList()
+                        .flatMap(responseList -> ServerResponse.ok().bodyValue(responseList))
+                        .doOnSuccess(serverResponse -> log.info("Manual review requests listed successfully"))
+                )
+                .doOnError(e -> log.error("Error listing manual review requests: {}", e.getMessage()));
+    }
+
+    private Mono<String> extractAndValidateToken(ServerRequest request) {
+        String token = request.headers().firstHeader("Authorization");
+
+        if (token == null || token.isEmpty() || !token.startsWith("Bearer ")) {
+            log.error("Authorization header is missing or malformed.");
+            return Mono.error(new UnauthorizedException("Authorization header is missing or invalid."));
+        }
+
+        String rawToken = token.substring(7);
+        return Mono.just(rawToken);
     }
 }

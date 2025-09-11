@@ -8,6 +8,8 @@ import co.com.crediya.requests.model.status.Status;
 import co.com.crediya.requests.model.status.StatusEnum;
 import co.com.crediya.requests.model.status.gateways.StatusRepository;
 import co.com.crediya.requests.model.typeloan.gateways.TypeLoanRepository;
+import co.com.crediya.requests.model.user.User;
+import co.com.crediya.requests.model.user.UserLoanStatus;
 import co.com.crediya.requests.model.user.gateways.UserGateway;
 import co.com.crediya.requests.usecase.status.StatusValidator;
 import co.com.crediya.requests.usecase.typeloan.TypeLoanValidator;
@@ -16,6 +18,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class LoanApplicationUseCase {
@@ -130,22 +133,57 @@ public class LoanApplicationUseCase {
                 });
     }
 
-    public Flux<LoanApplication> findRequestsForManualReview(int page, int size)  {
+    /**
+     * Finds all requests for manual review.
+     *
+     * <p>This method finds all requests with the status PENDING_REVIEW, REJECTED, or MANUAL_REVIEW.
+     * It then finds the users associated with each request and returns a Flux of UserLoanStatus objects.
+     *
+     * @param page the page number to be used for pagination.
+     * @param size the number of requests to be returned per page.
+     * @param token the token to be used for authentication.
+     * @return a Flux that emits UserLoanStatus objects or an error if the requests or users are not found.
+     */
+    public Flux<UserLoanStatus> findRequestsForManualReview(int page, int size, String token) {
         List<String> statusNames = List.of(
                 StatusEnum.PENDING_REVIEW.getValue(),
                 StatusEnum.REJECTED.getValue(),
                 StatusEnum.MANUAL_REVIEW.getValue()
         );
 
-        Flux<String> statusIdsFlux = Flux.fromIterable(statusNames)
-                .flatMap(statusRepository::findByName)
-                .map(status -> status.getId().toString());
-
         int offset = page * size;
 
-        return statusIdsFlux.collectList()
-                .flatMapMany(loanApplicationRepository::findByStatusIn)
-                .skip(offset)
-                .take(size);
+        return loanApplicationRepository.findByStatusNamesInAndPaginate(statusNames, offset, size)
+                .collectList()
+                .flatMapMany(loanApplications -> {
+                    if (loanApplications.isEmpty()) {
+                        return Flux.empty();
+                    }
+
+                    List<String> uniqueEmails = loanApplications.stream()
+                            .map(LoanApplication::getEmail)
+                            .distinct()
+                            .collect(Collectors.toList());
+
+                    return userGateway.findUsersByEmails(uniqueEmails, token)
+                            .collectMap(User::getEmail)
+                            .flatMapMany(userMap ->
+                                    Flux.fromIterable(loanApplications)
+                                            .map(loanApplication -> {
+                                                User user = userMap.get(loanApplication.getEmail());
+                                                return UserLoanStatus.builder()
+                                                        .name(user.getName())
+                                                        .email(user.getEmail())
+                                                        .documentNumber(user.getDocumentNumber())
+                                                        .baseSalary(user.getBaseSalary())
+                                                        //.totalMonthlyDebt(0.0f) //TODO
+                                                        .loanStatus(loanApplication.getStatus().getNames())
+                                                        .loanType(loanApplication.getTypeLoan().getNames())
+                                                        .loanAmount(loanApplication.getAmount())
+                                                        .loanTerm(loanApplication.getTerm())
+                                                        .build();
+                                            })
+                            );
+                });
     }
 }

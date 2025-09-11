@@ -13,4 +13,5 @@ public interface LoanApplicationRepository {
     Flux<LoanApplication> findByTypeLoan(String typeLoan);
     Flux<LoanApplication> findByEmail(String email);
     Flux<LoanApplication> findByStatusIn(List<String> statuses);
+    Flux<LoanApplication> findByStatusNamesInAndPaginate(List<String> statusNames, int offset, int size);
 }

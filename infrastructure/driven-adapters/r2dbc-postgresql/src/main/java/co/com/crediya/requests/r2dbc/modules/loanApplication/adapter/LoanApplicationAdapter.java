@@ -146,6 +146,16 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
                 .onErrorMap(e -> new RuntimeException("Error finding loan applications by statuses: " + statuses, e));
     }
 
+    @Override
+    public Flux<LoanApplication> findByStatusNamesInAndPaginate(List<String> statusNames, int offset, int size) {
+        log.info("Finding loan applications paginate by multiple statuses: {}", statusNames);
+        return loanApplicationRepositoryCrud.findByStatusNamesInAndPaginate(statusNames, offset, size)
+                .flatMap(this::buildRequestsModel)
+                .doOnComplete(() -> log.info("Search for loan applications paginate completed for multiple statuses: {}", statusNames))
+                .doOnError(e -> log.error("Error finding loan applications by statuses paginate {}: {}", statusNames, e.getMessage()))
+                .onErrorMap(e -> new RuntimeException("Error finding loan applications by statuses: " + statusNames, e));
+    }
+
     /**
      * Builds a {@link LoanApplication} model from a {@link LoanApplicationEntity} and their associated entities.
      *
