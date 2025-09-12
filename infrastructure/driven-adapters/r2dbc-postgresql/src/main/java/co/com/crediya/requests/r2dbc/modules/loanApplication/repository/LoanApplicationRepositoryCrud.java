@@ -13,10 +13,10 @@ public interface LoanApplicationRepositoryCrud extends ReactiveCrudRepository <L
     Flux<LoanApplicationEntity> findByEmail(String email);
     Flux<LoanApplicationEntity> findByStatusIn(List<String> statuses);
 
-    @Query("SELECT ra.* FROM loan_application ra " +
-            "JOIN status s ON ra.status_id = s.id " +
-            "WHERE s.name IN (:statusNames) " +
-            "ORDER BY ra.id " +
+    @Query("SELECT r.* FROM requests r " +
+            "JOIN status s ON r.status = s.id " +
+            "WHERE s.names IN (:statusNames) " +
+            "ORDER BY r.id " +
             "LIMIT :size OFFSET :offset")
     Flux<LoanApplicationEntity> findByStatusNamesInAndPaginate(List<String> statusNames, int offset, int size);
 }
