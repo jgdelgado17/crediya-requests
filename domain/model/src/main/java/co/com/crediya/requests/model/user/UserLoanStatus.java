@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class UserLoanStatus {
+    private Integer idLoanApplication;
     private String name;
     private String email;
     private String documentNumber;

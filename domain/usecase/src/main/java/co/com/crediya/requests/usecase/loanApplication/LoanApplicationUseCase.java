@@ -172,6 +172,7 @@ public class LoanApplicationUseCase {
                                             .map(loanApplication -> {
                                                 User user = userMap.get(loanApplication.getEmail());
                                                 return UserLoanStatus.builder()
+                                                        .idLoanApplication(loanApplication.getId())
                                                         .name(user.getName())
                                                         .email(user.getEmail())
                                                         .documentNumber(user.getDocumentNumber())
@@ -181,6 +182,7 @@ public class LoanApplicationUseCase {
                                                         .loanType(loanApplication.getTypeLoan().getNames())
                                                         .loanAmount(loanApplication.getAmount())
                                                         .loanTerm(loanApplication.getTerm())
+                                                        .loanInterestRate(loanApplication.getTypeLoan().getInterestRate())
                                                         .build();
                                             })
                             );
