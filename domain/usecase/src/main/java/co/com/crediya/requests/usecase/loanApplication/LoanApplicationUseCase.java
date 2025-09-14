@@ -136,13 +136,13 @@ public class LoanApplicationUseCase {
     /**
      * Finds all requests for manual review.
      *
-     * <p>This method finds all requests with the status PENDING_REVIEW, REJECTED, or MANUAL_REVIEW.
-     * It then finds the users associated with each request and returns a Flux of UserLoanStatus objects.
+     * <p>This method finds all requests with status PENDING_REVIEW, REJECTED, or MANUAL_REVIEW.
+     * It then finds all users associated with these requests and returns a Flux of UserLoanStatus objects.
      *
-     * @param page the page number to be used for pagination.
-     * @param size the number of requests to be returned per page.
+     * @param page the page of requests to be found.
+     * @param size the size of the page of requests to be found.
      * @param token the token to be used for authentication.
-     * @return a Flux that emits UserLoanStatus objects or an error if the requests or users are not found.
+     * @return a Flux of UserLoanStatus objects.
      */
     public Flux<UserLoanStatus> findRequestsForManualReview(int page, int size, String token) {
         List<String> statusNames = List.of(
@@ -151,41 +151,45 @@ public class LoanApplicationUseCase {
                 StatusEnum.MANUAL_REVIEW.getValue()
         );
 
-        int offset = page * size;
+        Flux<String> statusIdsFlux = Flux.fromIterable(statusNames)
+                .flatMap(statusRepository::findByName)
+                .map(status -> status.getId().toString());
 
-        return loanApplicationRepository.findByStatusNamesInAndPaginate(statusNames, offset, size)
-                .collectList()
-                .flatMapMany(loanApplications -> {
-                    if (loanApplications.isEmpty()) {
-                        return Flux.empty();
-                    }
+        return statusIdsFlux.collectList()
+                        .flatMapMany(listStatusIds ->
+                                loanApplicationRepository.findByStatusIn(listStatusIds, page, size)
+                                .collectList()
+                                .flatMapMany(listLoanApplications -> {
+                                    if (listLoanApplications.isEmpty()) {
+                                        return Flux.empty();
+                                    }
 
-                    List<String> uniqueEmails = loanApplications.stream()
-                            .map(LoanApplication::getEmail)
-                            .distinct()
-                            .collect(Collectors.toList());
+                                    List<String> uniqueEmails = listLoanApplications.stream()
+                                            .map(LoanApplication::getEmail)
+                                            .distinct()
+                                            .collect(Collectors.toList());
 
-                    return userGateway.findUsersByEmails(uniqueEmails, token)
-                            .collectMap(User::getEmail)
-                            .flatMapMany(userMap ->
-                                    Flux.fromIterable(loanApplications)
-                                            .map(loanApplication -> {
-                                                User user = userMap.get(loanApplication.getEmail());
-                                                return UserLoanStatus.builder()
-                                                        .idLoanApplication(loanApplication.getId())
-                                                        .name(user.getName())
-                                                        .email(user.getEmail())
-                                                        .documentNumber(user.getDocumentNumber())
-                                                        .baseSalary(user.getBaseSalary())
-                                                        //.totalMonthlyDebt(0.0f) //TODO
-                                                        .loanStatus(loanApplication.getStatus().getNames())
-                                                        .loanType(loanApplication.getTypeLoan().getNames())
-                                                        .loanAmount(loanApplication.getAmount())
-                                                        .loanTerm(loanApplication.getTerm())
-                                                        .loanInterestRate(loanApplication.getTypeLoan().getInterestRate())
-                                                        .build();
-                                            })
-                            );
-                });
+                                    return userGateway.findUsersByEmails(uniqueEmails, token)
+                                            .collectMap(User::getEmail)
+                                            .flatMapMany(userMap ->
+                                                    Flux.fromIterable(listLoanApplications)
+                                                            .map(loanApplication -> {
+                                                                User user = userMap.get(loanApplication.getEmail());
+                                                                return UserLoanStatus.builder()
+                                                                        .idLoanApplication(loanApplication.getId())
+                                                                        .name(user.getName())
+                                                                        .email(user.getEmail())
+                                                                        .documentNumber(user.getDocumentNumber())
+                                                                        .baseSalary(user.getBaseSalary())
+                                                                        //.totalMonthlyDebt(0.0f) //TODO
+                                                                        .loanStatus(loanApplication.getStatus().getNames())
+                                                                        .loanType(loanApplication.getTypeLoan().getNames())
+                                                                        .loanAmount(loanApplication.getAmount())
+                                                                        .loanTerm(loanApplication.getTerm())
+                                                                        .loanInterestRate(loanApplication.getTypeLoan().getInterestRate())
+                                                                        .build();
+                                                            })
+                                            );
+                                }));
     }
 }

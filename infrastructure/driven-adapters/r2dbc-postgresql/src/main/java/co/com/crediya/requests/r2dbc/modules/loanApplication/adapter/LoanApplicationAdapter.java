@@ -16,6 +16,9 @@ import co.com.crediya.requests.r2dbc.modules.typeloan.repository.TypeLoanReposit
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -133,27 +136,20 @@ public class LoanApplicationAdapter implements LoanApplicationRepository {
      *
      * <p>This method logs the request finding process in the info level.
      *
-     * @param statuses the statuses of the requests to be found. The statuses cannot be null or empty.
+     * @param statusIds the statuses of the requests to be found. The statuses cannot be null or empty.
+     * @param page the page of requests to be found.
+     * @param size the size of the page of requests to be found.
      * @return a {@link Flux} that emits all requests with the given statuses or an error if they cannot be found.
      */
     @Override
-    public Flux<LoanApplication> findByStatusIn(List<String> statuses) {
-        log.info("Finding loan applications by multiple statuses: {}", statuses);
-        return loanApplicationRepositoryCrud.findByStatusIn(statuses)
+    public Flux<LoanApplication> findByStatusIn(List<String> statusIds, int page, int size) {
+        log.info("Finding loan applications by multiple statuses: {}", statusIds);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+        return loanApplicationRepositoryCrud.findByStatusIn(statusIds, pageable)
                 .flatMap(this::buildRequestsModel)
-                .doOnComplete(() -> log.info("Search for loan applications completed for multiple statuses: {}", statuses))
-                .doOnError(e -> log.error("Error finding loan applications by statuses {}: {}", statuses, e.getMessage()))
-                .onErrorMap(e -> new RuntimeException("Error finding loan applications by statuses: " + statuses, e));
-    }
-
-    @Override
-    public Flux<LoanApplication> findByStatusNamesInAndPaginate(List<String> statusNames, int offset, int size) {
-        log.info("Finding loan applications paginate by multiple statuses: {}", statusNames);
-        return loanApplicationRepositoryCrud.findByStatusNamesInAndPaginate(statusNames, offset, size)
-                .flatMap(this::buildRequestsModel)
-                .doOnComplete(() -> log.info("Search for loan applications paginate completed for multiple statuses: {}", statusNames))
-                .doOnError(e -> log.error("Error finding loan applications by statuses paginate {}: {}", statusNames, e.getMessage()))
-                .onErrorMap(e -> new RuntimeException("Error finding loan applications by statuses: " + statusNames, e));
+                .doOnComplete(() -> log.info("Search for loan applications completed for multiple statuses: {}", statusIds))
+                .doOnError(e -> log.error("Error finding loan applications by statuses {}: {}", statusIds, e.getMessage()))
+                .onErrorMap(e -> new RuntimeException("Error finding loan applications by statuses: " + statusIds, e));
     }
 
     /**
