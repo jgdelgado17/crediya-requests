@@ -37,7 +37,8 @@ adapter:
   restconsumer:
     timeout: 5000
     url: "${ADAPTER_RESTCONSUMER_URL}"
-    uri-user: "${ADAPTER_RESTCONSUMER_URI_USER}"
+    uri-user-by-email: "${ADAPTER_RESTCONSUMER_URI_USER_BY_EMAIL}"
+    uri-users-by-list-emails: "${ADAPTER_RESTCONSUMER_URI_USERS_BY_LIST_EMAILS}"
 resilience4j:
   circuitbreaker:
     instances:

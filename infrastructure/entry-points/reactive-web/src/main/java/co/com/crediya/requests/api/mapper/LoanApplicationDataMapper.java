@@ -21,8 +21,8 @@ public class LoanApplicationDataMapper {
                 loanApplication.getAmount(),
                 loanApplication.getTerm(),
                 loanApplication.getEmail(),
-                loanApplication.getTypeLoan().getNames(),
-                loanApplication.getStatus().getNames()
+                loanApplication.getStatus().getNames(),
+                loanApplication.getTypeLoan().getNames()
         );
     }
 }
