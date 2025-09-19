@@ -1,9 +1,6 @@
 package co.com.crediya.requests.api;
 
-import co.com.crediya.requests.api.dto.LoanApplicationRequest;
-import co.com.crediya.requests.api.dto.LoanApplicationResponse;
-import co.com.crediya.requests.api.dto.StatusRequest;
-import co.com.crediya.requests.api.dto.TypeLoanRequest;
+import co.com.crediya.requests.api.dto.*;
 import co.com.crediya.requests.api.mapper.LoanApplicationDataMapper;
 import co.com.crediya.requests.api.mapper.StatusDataMapper;
 import co.com.crediya.requests.api.mapper.TypeLoanDataMapper;
@@ -335,6 +332,65 @@ public class Handler {
                         .doOnSuccess(serverResponse -> log.info("Manual review requests listed successfully"))
                 )
                 .doOnError(e -> log.error("Error listing manual review requests: {}", e.getMessage()));
+    }
+
+    @Operation(
+            tags = {"LoanApplication"},
+            operationId = "updateStatusRequest",
+            summary = "Update the status of a loan application",
+            description = "Updates the status of a loan application based on the provided request ID and status name.",
+            requestBody = @RequestBody(
+                    required = true,
+                    description = "Update status request",
+                    content = @Content(schema = @Schema(implementation = UpdateStatusLoanApplicationRequest.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Loan application status updated successfully",
+                            content = @Content(schema = @Schema(implementation = LoanApplicationResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid request",
+                            content = @Content(schema = @Schema(implementation = Error.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Unauthorized",
+                            content = @Content(schema = @Schema(implementation = Error.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal server error",
+                            content = @Content(schema = @Schema(implementation = Error.class))
+                    )
+            }
+    )
+    public Mono<ServerResponse> updateStatusRequest(ServerRequest request) {
+        log.info("Request received to update status request");
+
+        return request.bodyToMono(UpdateStatusLoanApplicationRequest.class)
+                .doOnNext(updateStatusLoanApplicationRequest -> {
+                    BeanPropertyBindingResult errors = new BeanPropertyBindingResult(updateStatusLoanApplicationRequest, "updateStatusLoanApplicationRequest");
+                    validator.validate(updateStatusLoanApplicationRequest, errors);
+                    if (errors.hasErrors()) {
+                        List<String> errorMessages = errors.getAllErrors().stream()
+                                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                                .collect(Collectors.toList());
+                        String fullErrorMessage = "Validation failed: " + String.join(", ", errorMessages);
+                        throw new IllegalArgumentException(fullErrorMessage);
+                    }
+                })
+                .flatMap(updateStatusLoanApplicationRequest -> {
+                    Integer idLoanApplication = updateStatusLoanApplicationRequest.idLoanApplication();
+                    String status = updateStatusLoanApplicationRequest.statusName();
+                    return loanApplicationUseCase.updateStatusRequest(idLoanApplication, status);
+                })
+                .map(LoanApplicationDataMapper::toLoanApplicationResponse)
+                .flatMap(loanApplication -> ServerResponse.ok().bodyValue(loanApplication))
+                .doOnSuccess(serverResponse -> log.info("Loan application status updated successfully"))
+                .doOnError(e -> log.error("Error updating loan application status: {}", e.getMessage()));
     }
 
     private Mono<String> extractAndValidateToken(ServerRequest request) {

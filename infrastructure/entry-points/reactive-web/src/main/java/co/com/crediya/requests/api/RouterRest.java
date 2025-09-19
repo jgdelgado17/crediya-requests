@@ -9,8 +9,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
-import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
+import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 @Configuration
@@ -44,12 +43,20 @@ public class RouterRest {
                     beanClass = Handler.class,
                     beanMethod = "listManualReviewRequests",
                     produces = {MediaType.APPLICATION_JSON_VALUE}
+            ),
+            @RouterOperation(
+                    path = "/api/v1/loan-application/update-status",
+                    method = RequestMethod.PUT,
+                    beanClass = Handler.class,
+                    beanMethod = "updateStatusRequest",
+                    produces = {MediaType.APPLICATION_JSON_VALUE}
             )
     })
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
         return route(POST("/api/v1/status"), handler::createStatus)
                 .andRoute(POST("/api/v1/type-loan"), handler::createTypeLoan)
                 .andRoute(POST("/api/v1/loan-application"), handler::createLoanApplication)
-                .andRoute(GET("/api/v1/loan-application/manual-review"), handler::listManualReviewRequests);
+                .andRoute(GET("/api/v1/loan-application/manual-review"), handler::listManualReviewRequests)
+                .andRoute(PUT("/api/v1/loan-application/update-status"), handler::updateStatusRequest);
     }
 }
