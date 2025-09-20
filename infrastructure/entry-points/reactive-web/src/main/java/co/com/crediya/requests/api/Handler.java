@@ -361,6 +361,16 @@ public class Handler {
                             content = @Content(schema = @Schema(implementation = Error.class))
                     ),
                     @ApiResponse(
+                            responseCode = "403",
+                            description = "Forbidden",
+                            content = @Content(schema = @Schema(implementation = Error.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Not found",
+                            content = @Content(schema = @Schema(implementation = Error.class))
+                    ),
+                    @ApiResponse(
                             responseCode = "500",
                             description = "Internal server error",
                             content = @Content(schema = @Schema(implementation = Error.class))
@@ -370,27 +380,31 @@ public class Handler {
     public Mono<ServerResponse> updateStatusRequest(ServerRequest request) {
         log.info("Request received to update status request");
 
-        return request.bodyToMono(UpdateStatusLoanApplicationRequest.class)
-                .doOnNext(updateStatusLoanApplicationRequest -> {
-                    BeanPropertyBindingResult errors = new BeanPropertyBindingResult(updateStatusLoanApplicationRequest, "updateStatusLoanApplicationRequest");
-                    validator.validate(updateStatusLoanApplicationRequest, errors);
-                    if (errors.hasErrors()) {
-                        List<String> errorMessages = errors.getAllErrors().stream()
-                                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                                .collect(Collectors.toList());
-                        String fullErrorMessage = "Validation failed: " + String.join(", ", errorMessages);
-                        throw new IllegalArgumentException(fullErrorMessage);
-                    }
-                })
-                .flatMap(updateStatusLoanApplicationRequest -> {
-                    Integer idLoanApplication = updateStatusLoanApplicationRequest.idLoanApplication();
-                    String status = updateStatusLoanApplicationRequest.statusName();
-                    return loanApplicationUseCase.updateStatusRequest(idLoanApplication, status);
-                })
-                .map(LoanApplicationDataMapper::toLoanApplicationResponse)
-                .flatMap(loanApplication -> ServerResponse.ok().bodyValue(loanApplication))
-                .doOnSuccess(serverResponse -> log.info("Loan application status updated successfully"))
-                .doOnError(e -> log.error("Error updating loan application status: {}", e.getMessage()));
+        return request.principal()
+                .flatMap(principal -> request.bodyToMono(UpdateStatusLoanApplicationRequest.class)
+                        .doOnNext(updateStatusLoanApplicationRequest -> {
+                            BeanPropertyBindingResult errors = new BeanPropertyBindingResult(updateStatusLoanApplicationRequest, "updateStatusLoanApplicationRequest");
+                            validator.validate(updateStatusLoanApplicationRequest, errors);
+                            if (errors.hasErrors()) {
+                                List<String> errorMessages = errors.getAllErrors().stream()
+                                        .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                                        .collect(Collectors.toList());
+                                String fullErrorMessage = "Validation failed: " + String.join(", ", errorMessages);
+                                throw new IllegalArgumentException(fullErrorMessage);
+                            }
+                        })
+                        .flatMap(updateStatusLoanApplicationRequest -> {
+                            Integer idLoanApplication = updateStatusLoanApplicationRequest.idLoanApplication();
+                            String status = updateStatusLoanApplicationRequest.statusName();
+                            String authenticatedUserEmail = principal.getName();
+
+                            return loanApplicationUseCase.updateStatusRequest(idLoanApplication, status, authenticatedUserEmail);
+                        })
+                        .map(LoanApplicationDataMapper::toLoanApplicationResponse)
+                        .flatMap(loanApplication -> ServerResponse.ok().bodyValue(loanApplication))
+                        .doOnSuccess(serverResponse -> log.info("Loan application status updated successfully"))
+                        .doOnError(e -> log.error("Error updating loan application status: {}", e.getMessage()))
+                );
     }
 
     private Mono<String> extractAndValidateToken(ServerRequest request) {

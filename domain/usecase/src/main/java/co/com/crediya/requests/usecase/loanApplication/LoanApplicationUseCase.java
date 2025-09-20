@@ -4,6 +4,7 @@ import co.com.crediya.requests.model.loanApplication.LoanApplication;
 import co.com.crediya.requests.model.loanApplication.gateways.LoanApplicationRepository;
 import co.com.crediya.requests.model.shared.exceptions.ErrorMessages;
 import co.com.crediya.requests.model.shared.exceptions.RecordNotFoundException;
+import co.com.crediya.requests.model.shared.exceptions.UnauthorizedException;
 import co.com.crediya.requests.model.status.Status;
 import co.com.crediya.requests.model.status.StatusEnum;
 import co.com.crediya.requests.model.status.gateways.StatusRepository;
@@ -107,18 +108,22 @@ public class LoanApplicationUseCase {
     }
 
     /**
-     * Updates the status of a request.
+     * Updates the status of a loan application with the given id and status name.
      *
-     * <p>This method first finds a request by id and then finds a status by names.
-     * If the request is not found, an error is returned. If the status is not found,
-     * an error is returned. If the request and status are found, the status of the
-     * request is updated.
+     * <p>This method first checks if the loan application with the given id exists. If it does not exist, a
+     * {@link RecordNotFoundException} is returned. If the loan application exists, the status name is validated. If the
+     * status name is invalid, a {@link RecordNotFoundException} is returned. If the status name is valid, the status is found
+     * and if the status does not exist, a {@link RecordNotFoundException} is returned. If the status exists, the status of the
+     * loan application is updated and the loan application is saved. If the user who submitted the request is the owner
+     * of the loan request, an {@link UnauthorizedException} is returned.
      *
-     * @param id         the id of the request to be updated.
-     * @param statusName the names of the status to be updated.
-     * @return a Mono that emits the updated request or an error if the request or status is not found.
+     * @param id the id of the loan application to be updated. The id cannot be null.
+     * @param statusName the name of the status to be updated. The status name cannot be null or empty.
+     * @param authenticatedUserEmail the email of the user that sent the request. The email cannot be null or empty.
+     * @return a {@link Mono} that emits the updated loan application or an error if the loan application does not exist,
+     * the status name is invalid, the status does not exist or the user who submitted the request is the owner of the loan request.
      */
-    public Mono<LoanApplication> updateStatusRequest(Integer id, String statusName) {
+    public Mono<LoanApplication> updateStatusRequest(Integer id, String statusName, String authenticatedUserEmail) {
         return loanApplicationRepository.findById(id)
                 .switchIfEmpty(Mono.error(new RecordNotFoundException(ErrorMessages.notFoundMessage(LoanApplication.class, id))))
                 .zipWith(StatusValidator.validateName(statusName)
@@ -129,6 +134,11 @@ public class LoanApplicationUseCase {
                     var request = tuple.getT1();
                     var status = tuple.getT2();
                     request.setStatus(status);
+
+                    if(request.getEmail().equals(authenticatedUserEmail)){
+                        return Mono.error(new UnauthorizedException("The user cannot change the status of a loan application that belongs to him."));
+                    }
+
                     return loanApplicationRepository.save(request);
                 });
     }
