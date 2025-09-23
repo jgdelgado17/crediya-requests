@@ -14,7 +14,7 @@ spring:
 adapters:
   r2dbc:
     host: "${DB_HOST}"
-    port: ${DB_PORT}
+    port: "${DB_PORT}"
     username: "${DB_USERNAME}"
     password: "${DB_PASSWORD}"
     database: "${DB_DATABASE}"
@@ -39,6 +39,10 @@ adapter:
     url: "${ADAPTER_RESTCONSUMER_URL}"
     uri-user-by-email: "${ADAPTER_RESTCONSUMER_URI_USER_BY_EMAIL}"
     uri-users-by-list-emails: "${ADAPTER_RESTCONSUMER_URI_USERS_BY_LIST_EMAILS}"
+  sqs:
+    region: "us-east-1"
+    queueUrl: "http://localhost:4566/000000000000/sample"
+    endpoint: "http://localhost:4566 # For localstack only"
 resilience4j:
   circuitbreaker:
     instances:
@@ -51,7 +55,6 @@ resilience4j:
         slidingWindowSize: 10
         minimumNumberOfCalls: 10
         waitDurationInOpenState: "10s"
-
 security:
   jwt:
     secret: "${JWT_SECRET}"
