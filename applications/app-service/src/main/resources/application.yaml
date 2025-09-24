@@ -40,9 +40,9 @@ adapter:
     uri-user-by-email: "${ADAPTER_RESTCONSUMER_URI_USER_BY_EMAIL}"
     uri-users-by-list-emails: "${ADAPTER_RESTCONSUMER_URI_USERS_BY_LIST_EMAILS}"
   sqs:
-    region: "us-east-1"
-    queueUrl: "http://localhost:4566/000000000000/sample"
-    endpoint: "http://localhost:4566 # For localstack only"
+    region: "${AWS_DEFAULT_REGION}"
+    queueUrl: "${AWS_SQS_QUEUE_URL}"
+    #endpoint: ${AWS_SQS_ENDPOINT}
 resilience4j:
   circuitbreaker:
     instances:

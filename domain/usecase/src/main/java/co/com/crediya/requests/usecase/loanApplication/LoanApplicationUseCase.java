@@ -2,6 +2,8 @@ package co.com.crediya.requests.usecase.loanApplication;
 
 import co.com.crediya.requests.model.loanApplication.LoanApplication;
 import co.com.crediya.requests.model.loanApplication.gateways.LoanApplicationRepository;
+import co.com.crediya.requests.model.notification.NotificationRequest;
+import co.com.crediya.requests.model.notification.gateways.NotificationGateway;
 import co.com.crediya.requests.model.shared.exceptions.ErrorMessages;
 import co.com.crediya.requests.model.shared.exceptions.RecordNotFoundException;
 import co.com.crediya.requests.model.shared.exceptions.UnauthorizedException;
@@ -27,6 +29,7 @@ public class LoanApplicationUseCase {
     private final TypeLoanRepository typeLoanRepository;
     private final StatusRepository statusRepository;
     private final UserGateway userGateway;
+    private final NotificationGateway notificationGateway;
 
     /**
      * Creates a new request with the given parameters.
@@ -108,22 +111,18 @@ public class LoanApplicationUseCase {
     }
 
     /**
-     * Updates the status of a loan application with the given id and status name.
+     * Updates the status of a loan application.
      *
-     * <p>This method first checks if the loan application with the given id exists. If it does not exist, a
-     * {@link RecordNotFoundException} is returned. If the loan application exists, the status name is validated. If the
-     * status name is invalid, a {@link RecordNotFoundException} is returned. If the status name is valid, the status is found
-     * and if the status does not exist, a {@link RecordNotFoundException} is returned. If the status exists, the status of the
-     * loan application is updated and the loan application is saved. If the user who submitted the request is the owner
-     * of the loan request, an {@link UnauthorizedException} is returned.
+     * <p>This method validates the id and status name and if they are valid, it updates the status of the loan application.
+     * Send a message to SQS to notify the user.
      *
-     * @param id the id of the loan application to be updated. The id cannot be null.
-     * @param statusName the name of the status to be updated. The status name cannot be null or empty.
-     * @param authenticatedUserEmail the email of the user that sent the request. The email cannot be null or empty.
-     * @return a {@link Mono} that emits the updated loan application or an error if the loan application does not exist,
-     * the status name is invalid, the status does not exist or the user who submitted the request is the owner of the loan request.
+     * @param id the id of loan application to update.
+     * @param statusName new status of loan application.
+     * @param authenticatedUserEmail email of authenticated user.
+     * @param token token of authenticated user.
+     * @return updated loan application.
      */
-    public Mono<LoanApplication> updateStatusRequest(Integer id, String statusName, String authenticatedUserEmail) {
+    public Mono<LoanApplication> updateStatusRequest(Integer id, String statusName, String authenticatedUserEmail, String token) {
         return loanApplicationRepository.findById(id)
                 .switchIfEmpty(Mono.error(new RecordNotFoundException(ErrorMessages.notFoundMessage(LoanApplication.class, id))))
                 .zipWith(StatusValidator.validateName(statusName)
@@ -135,11 +134,23 @@ public class LoanApplicationUseCase {
                     var status = tuple.getT2();
                     request.setStatus(status);
 
-                    if(request.getEmail().equals(authenticatedUserEmail)){
+                    if (request.getEmail().equals(authenticatedUserEmail)) {
                         return Mono.error(new UnauthorizedException("The user cannot change the status of a loan application that belongs to him."));
                     }
 
-                    return loanApplicationRepository.save(request);
+                    return userGateway.findUserByEmail(request.getEmail(), token)
+                            .switchIfEmpty(Mono.error(new RecordNotFoundException(ErrorMessages.notFoundMessage(User.class, request.getEmail()))))
+                            .flatMap(user -> loanApplicationRepository.save(request)
+                                    .flatMap(updatedRequest -> {
+                                        NotificationRequest notification = NotificationRequest.builder()
+                                                .applicantEmail(updatedRequest.getEmail())
+                                                .applicantName(user.getName().concat(" ").concat(user.getLastName()))
+                                                .status(updatedRequest.getStatus().getNames())
+                                                .loanAmount(updatedRequest.getAmount())
+                                                .build();
+                                        return notificationGateway.sendNotification(notification)
+                                                .thenReturn(updatedRequest);
+                                    }));
                 });
     }
 
@@ -149,8 +160,8 @@ public class LoanApplicationUseCase {
      * <p>This method finds all requests with status PENDING_REVIEW, REJECTED, or MANUAL_REVIEW.
      * It then finds all users associated with these requests and returns a Flux of UserLoanStatus objects.
      *
-     * @param page the page of requests to be found.
-     * @param size the size of the page of requests to be found.
+     * @param page  the page of requests to be found.
+     * @param size  the size of the page of requests to be found.
      * @param token the token to be used for authentication.
      * @return a Flux of UserLoanStatus objects.
      */
@@ -166,8 +177,8 @@ public class LoanApplicationUseCase {
                 .map(status -> status.getId().toString());
 
         return statusIdsFlux.collectList()
-                        .flatMapMany(listStatusIds ->
-                                loanApplicationRepository.findByStatusIn(listStatusIds, page, size)
+                .flatMapMany(listStatusIds ->
+                        loanApplicationRepository.findByStatusIn(listStatusIds, page, size)
                                 .collectList()
                                 .flatMapMany(listLoanApplications -> {
                                     if (listLoanApplications.isEmpty()) {

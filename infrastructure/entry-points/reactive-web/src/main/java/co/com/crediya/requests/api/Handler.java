@@ -393,12 +393,15 @@ public class Handler {
                                 throw new IllegalArgumentException(fullErrorMessage);
                             }
                         })
-                        .flatMap(updateStatusLoanApplicationRequest -> {
+                        .zipWith(extractAndValidateToken(request))
+                        .flatMap(tuple -> {
+                            UpdateStatusLoanApplicationRequest updateStatusLoanApplicationRequest = tuple.getT1();
+                            String rawToken = tuple.getT2();
                             Integer idLoanApplication = updateStatusLoanApplicationRequest.idLoanApplication();
                             String status = updateStatusLoanApplicationRequest.statusName();
                             String authenticatedUserEmail = principal.getName();
 
-                            return loanApplicationUseCase.updateStatusRequest(idLoanApplication, status, authenticatedUserEmail);
+                            return loanApplicationUseCase.updateStatusRequest(idLoanApplication, status, authenticatedUserEmail, rawToken);
                         })
                         .map(LoanApplicationDataMapper::toLoanApplicationResponse)
                         .flatMap(loanApplication -> ServerResponse.ok().bodyValue(loanApplication))
